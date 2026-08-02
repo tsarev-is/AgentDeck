@@ -1,0 +1,133 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:AgentDeck.ViewModels"
+        x:Class="AgentDeck.Views.SettingsWindow"
+        x:DataType="vm:SettingsViewModel"
+        Title="Settings"
+        Width="560"
+        MinHeight="260"
+        MaxHeight="680"
+        SizeToContent="Height"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource IndustryBackground}"
+        Foreground="{StaticResource IndustryText}"
+        FontFamily="{StaticResource IndustryBodyFont}">
+
+    <DockPanel LastChildFill="True">
+
+        <!-- Подвал: отмена и сохранение -->
+        <Border DockPanel.Dock="Bottom"
+                Padding="17,10"
+                BorderBrush="{StaticResource IndustryHairline}"
+                BorderThickness="0,1,0,0">
+
+            <StackPanel Orientation="Horizontal"
+                        Spacing="7"
+                        HorizontalAlignment="Right">
+
+                <Button Content="Cancel" Click="OnCancelClick" />
+                <Button Classes="primary" Content="Save" Click="OnSaveClick" IsDefault="True" />
+
+            </StackPanel>
+        </Border>
+
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                      VerticalScrollBarVisibility="Auto">
+
+            <StackPanel Margin="17" Spacing="17">
+
+                <!-- Директория по умолчанию -->
+                <StackPanel Spacing="5">
+
+                    <TextBlock Classes="label" Text="DEFAULT DIRECTORY FOR A NEW TERMINAL" />
+
+                    <TextBox Text="{Binding DefaultDirectory, Mode=TwoWay}"
+                             PlaceholderText="~"
+                             Padding="10,7" />
+
+                </StackPanel>
+
+                <!-- Утилиты -->
+                <StackPanel Spacing="7">
+
+                    <Grid ColumnDefinitions="*,Auto">
+
+                        <TextBlock Grid.Column="0"
+                                   Classes="label"
+                                   VerticalAlignment="Center"
+                                   Text="UTILITIES (CLI AGENTS)" />
+
+                        <Button Grid.Column="1"
+                                Classes="ghost"
+                                FontFamily="{StaticResource IndustryBodyFont}"
+                                Padding="10,3"
+                                Content="+ Add"
+                                Click="OnAddClick" />
+
+                    </Grid>
+
+                    <Grid ColumnDefinitions="24,*,1.4*,24">
+
+                        <TextBlock Grid.Column="1"
+                                   Classes="label column"
+                                   Margin="10,0,10,0"
+                                   Text="NAME" />
+
+                        <TextBlock Grid.Column="2"
+                                   Classes="label column"
+                                   Margin="0,0,10,0"
+                                   Text="PATH / COMMAND" />
+
+                    </Grid>
+
+                    <ItemsControl ItemsSource="{Binding Utilities}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:UtilityRowViewModel">
+
+                                <Grid ColumnDefinitions="24,*,1.4*,24" Margin="0,0,0,4">
+
+                                    <CheckBox Grid.Column="0"
+                                              IsChecked="{Binding IsEnabled, Mode=TwoWay}"
+                                              VerticalAlignment="Center"
+                                              ToolTip.Tip="Show this utility in a new terminal" />
+
+                                    <TextBox Grid.Column="1"
+                                             Margin="10,0,10,0"
+                                             FontFamily="{StaticResource IndustryBodyFont}"
+                                             Opacity="{Binding RowOpacity}"
+                                             Text="{Binding Name, Mode=TwoWay}" />
+
+                                    <TextBox Grid.Column="2"
+                                             Margin="0,0,10,0"
+                                             Opacity="{Binding RowOpacity}"
+                                             PlaceholderText="empty — plain shell"
+                                             Text="{Binding Command, Mode=TwoWay}" />
+
+                                    <Button Grid.Column="3"
+                                            Classes="icon"
+                                            Content="&#x2715;"
+                                            VerticalAlignment="Center"
+                                            ToolTip.Tip="Remove"
+                                            Click="OnRemoveClick" />
+
+                                </Grid>
+
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <TextBlock Classes="muted"
+                               FontSize="11"
+                               TextWrapping="Wrap"
+                               Text="Disabled utilities are not shown in a new terminal. An empty command starts a plain shell." />
+
+                </StackPanel>
+
+            </StackPanel>
+        </ScrollViewer>
+
+    </DockPanel>
+
+</Window>

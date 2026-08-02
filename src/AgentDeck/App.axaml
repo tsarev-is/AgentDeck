@@ -1,7 +1,9 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             x:Class="AgentDeck.App">
+             x:Class="AgentDeck.App"
+             RequestedThemeVariant="Dark">
     <Application.Styles>
         <FluentTheme />
+        <StyleInclude Source="avares://AgentDeck/Theme/Industry.axaml" />
     </Application.Styles>
 </Application>

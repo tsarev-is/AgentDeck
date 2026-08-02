@@ -1,0 +1,338 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Styles.Resources>
+
+        <!-- ═══ Палитра Industry dark ═══ -->
+
+        <Color x:Key="IndustryBackgroundColor">#1d1f20</Color>
+        <Color x:Key="IndustryTextColor">#f2f2f3</Color>
+        <Color x:Key="IndustryAccentColor">#5980a6</Color>
+        <Color x:Key="IndustryAccentHoverColor">#597ea3</Color>
+        <Color x:Key="IndustryAccentPressedColor">#416180</Color>
+        <Color x:Key="IndustryAccentTextColor">#94bce3</Color>
+        <Color x:Key="IndustryMutedColor">#7a7a7d</Color>
+
+        <SolidColorBrush x:Key="IndustryBackground" Color="{StaticResource IndustryBackgroundColor}" />
+        <SolidColorBrush x:Key="IndustryText" Color="{StaticResource IndustryTextColor}" />
+        <SolidColorBrush x:Key="IndustryAccent" Color="{StaticResource IndustryAccentColor}" />
+        <SolidColorBrush x:Key="IndustryAccentHover" Color="{StaticResource IndustryAccentHoverColor}" />
+        <SolidColorBrush x:Key="IndustryAccentPressed" Color="{StaticResource IndustryAccentPressedColor}" />
+        <SolidColorBrush x:Key="IndustryAccentText" Color="{StaticResource IndustryAccentTextColor}" />
+        <SolidColorBrush x:Key="IndustryMuted" Color="{StaticResource IndustryMutedColor}" />
+
+        <!-- Тонкая заливка акцентом — hover ghost-кнопок запуска -->
+        <SolidColorBrush x:Key="IndustryAccentWash" Color="#2c455d" />
+
+        <!-- Границы: hairline .16, поле ввода .32, dashed .4, strong .5 -->
+        <SolidColorBrush x:Key="IndustryHairline" Color="#f2f2f3" Opacity="0.16" />
+        <SolidColorBrush x:Key="IndustryFieldBorder" Color="#f2f2f3" Opacity="0.32" />
+        <SolidColorBrush x:Key="IndustryDashedBorder" Color="#f2f2f3" Opacity="0.4" />
+        <SolidColorBrush x:Key="IndustryStrongBorder" Color="#f2f2f3" Opacity="0.5" />
+
+        <!-- Текст: терминал, иконки-кнопки, текст на акцентной заливке -->
+        <SolidColorBrush x:Key="IndustryTerminalText" Color="#d4d4d7" />
+        <SolidColorBrush x:Key="IndustryIcon" Color="#98989b" />
+        <SolidColorBrush x:Key="IndustryOnAccentText" Color="#f5f5f8" />
+
+        <!-- ═══ Шрифты (embedded, OFL) ═══ -->
+
+        <FontFamily x:Key="IndustryHeadingFont">avares://AgentDeck/Assets/Fonts#Barlow Condensed</FontFamily>
+        <FontFamily x:Key="IndustryBodyFont">avares://AgentDeck/Assets/Fonts#Barlow</FontFamily>
+        <FontFamily x:Key="IndustryMonoFont">avares://AgentDeck/Assets/Fonts#JetBrains Mono</FontFamily>
+
+    </Styles.Resources>
+
+    <!-- ═══ Кнопки ═══ -->
+
+    <Style Selector="Button">
+        <Setter Property="CornerRadius" Value="0" />
+        <Setter Property="FontFamily" Value="{StaticResource IndustryBodyFont}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="Padding" Value="14,7" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{StaticResource IndustryFieldBorder}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Foreground" Value="{StaticResource IndustryText}" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+
+    <Style Selector="Button /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="CornerRadius" Value="0" />
+    </Style>
+
+    <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource IndustryAccentWash}" />
+        <Setter Property="BorderBrush" Value="{StaticResource IndustryAccentHover}" />
+        <Setter Property="TextElement.Foreground" Value="{StaticResource IndustryText}" />
+    </Style>
+
+    <Style Selector="Button:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource IndustryAccentPressed}" />
+        <Setter Property="BorderBrush" Value="{StaticResource IndustryAccentPressed}" />
+        <Setter Property="TextElement.Foreground" Value="{StaticResource IndustryOnAccentText}" />
+    </Style>
+
+    <!-- Disabled задаётся явно для каждого варианта: FluentTheme иначе подставляет свою серую заливку -->
+
+    <Style Selector="Button:disabled /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Opacity" Value="0.45" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{StaticResource IndustryFieldBorder}" />
+        <Setter Property="TextElement.Foreground" Value="{StaticResource IndustryText}" />
+    </Style>
+
+    <!-- Основная кнопка: единственный сплошной объект на «чертеже» -->
+
+    <Style Selector="Button.primary">
+        <Setter Property="Background" Value="{StaticResource IndustryAccent}" />
+        <Setter Property="BorderBrush" Value="{StaticResource IndustryAccentPressed}" />
+        <Setter Property="Foreground" Value="{StaticResource IndustryOnAccentText}" />
+    </Style>
+
+    <Style Selector="Button.primary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource IndustryAccentHover}" />
+        <Setter Property="BorderBrush" Value="{StaticResource IndustryAccentPressed}" />
+        <Setter Property="TextElement.Foreground" Value="{StaticResource IndustryOnAccentText}" />
+    </Style>
+
+    <Style Selector="Button.primary:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource IndustryAccentPressed}" />
+        <Setter Property="BorderBrush" Value="{StaticResource IndustryAccentPressed}" />
+    </Style>
+
+    <Style Selector="Button.primary:disabled /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource IndustryAccent}" />
+        <Setter Property="BorderBrush" Value="{StaticResource IndustryAccentPressed}" />
+        <Setter Property="TextElement.Foreground" Value="{StaticResource IndustryOnAccentText}" />
+    </Style>
+
+    <Style Selector="Button.ghost:disabled /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{StaticResource IndustryAccent}" />
+        <Setter Property="TextElement.Foreground" Value="{StaticResource IndustryAccentText}" />
+    </Style>
+
+    <Style Selector="Button.icon:disabled /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="TextElement.Foreground" Value="{StaticResource IndustryIcon}" />
+    </Style>
+
+    <!-- Ghost-кнопка запуска CLI: контур акцентом, моноширинный текст -->
+
+    <Style Selector="Button.ghost">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{StaticResource IndustryAccent}" />
+        <Setter Property="Foreground" Value="{StaticResource IndustryAccentText}" />
+        <Setter Property="FontFamily" Value="{StaticResource IndustryMonoFont}" />
+        <Setter Property="FontSize" Value="11.5" />
+        <Setter Property="FontWeight" Value="Normal" />
+        <Setter Property="Padding" Value="10,4" />
+    </Style>
+
+    <Style Selector="Button.ghost:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource IndustryAccentWash}" />
+        <Setter Property="BorderBrush" Value="{StaticResource IndustryAccent}" />
+        <Setter Property="TextElement.Foreground" Value="{StaticResource IndustryAccentText}" />
+    </Style>
+
+    <!-- Агент, сохранённый с прошлой сессии: заливка акцентом для запуска в один клик -->
+
+    <Style Selector="Button.ghost.suggested">
+        <Setter Property="Background" Value="{StaticResource IndustryAccent}" />
+        <Setter Property="Foreground" Value="{StaticResource IndustryOnAccentText}" />
+    </Style>
+
+    <Style Selector="Button.ghost.suggested:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource IndustryAccentHover}" />
+        <Setter Property="TextElement.Foreground" Value="{StaticResource IndustryOnAccentText}" />
+    </Style>
+
+    <!-- Кнопка-иконка в заголовке тайла: без рамки, подсветка только цветом глифа -->
+
+    <Style Selector="Button.icon">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Foreground" Value="{StaticResource IndustryIcon}" />
+        <Setter Property="FontFamily" Value="{StaticResource IndustryBodyFont}" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="Padding" Value="4,2" />
+        <Setter Property="MinWidth" Value="0" />
+        <Setter Property="MinHeight" Value="0" />
+    </Style>
+
+    <Style Selector="Button.icon:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="TextElement.Foreground" Value="{StaticResource IndustryText}" />
+    </Style>
+
+    <Style Selector="Button.icon:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="TextElement.Foreground" Value="{StaticResource IndustryAccentText}" />
+    </Style>
+
+    <!-- ═══ Поля ввода ═══ -->
+
+    <Style Selector="TextBox">
+        <Setter Property="CornerRadius" Value="0" />
+        <Setter Property="FontFamily" Value="{StaticResource IndustryMonoFont}" />
+        <Setter Property="FontSize" Value="11.5" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{StaticResource IndustryFieldBorder}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Foreground" Value="{StaticResource IndustryText}" />
+        <Setter Property="CaretBrush" Value="{StaticResource IndustryAccentText}" />
+        <Setter Property="SelectionBrush" Value="{StaticResource IndustryAccentPressed}" />
+        <Setter Property="Padding" Value="8,4" />
+        <Setter Property="MinHeight" Value="0" />
+    </Style>
+
+    <Style Selector="TextBox /template/ Border#PART_BorderElement">
+        <Setter Property="CornerRadius" Value="0" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{StaticResource IndustryFieldBorder}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="MinHeight" Value="0" />
+    </Style>
+
+    <Style Selector="TextBox:pointerover /template/ Border#PART_BorderElement">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{StaticResource IndustryAccentHover}" />
+    </Style>
+
+    <Style Selector="TextBox:focus /template/ Border#PART_BorderElement">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{StaticResource IndustryAccent}" />
+        <Setter Property="BorderThickness" Value="1" />
+    </Style>
+
+    <!-- ═══ Флажок: квадрат 14 px, залитый акцентом во включённом состоянии ═══ -->
+
+    <Style Selector="CheckBox">
+        <Setter Property="MinWidth" Value="0" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Foreground" Value="{StaticResource IndustryText}" />
+    </Style>
+
+    <Style Selector="CheckBox /template/ Border#NormalRectangle">
+        <Setter Property="CornerRadius" Value="0" />
+        <Setter Property="Width" Value="14" />
+        <Setter Property="Height" Value="14" />
+        <Setter Property="MinWidth" Value="0" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{StaticResource IndustryFieldBorder}" />
+        <Setter Property="BorderThickness" Value="1" />
+    </Style>
+
+    <Style Selector="CheckBox:pointerover /template/ Border#NormalRectangle">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{StaticResource IndustryAccentHover}" />
+    </Style>
+
+    <Style Selector="CheckBox:checked /template/ Border#NormalRectangle">
+        <Setter Property="Background" Value="{StaticResource IndustryAccent}" />
+        <Setter Property="BorderBrush" Value="{StaticResource IndustryAccentPressed}" />
+    </Style>
+
+    <Style Selector="CheckBox:checked:pointerover /template/ Border#NormalRectangle">
+        <Setter Property="Background" Value="{StaticResource IndustryAccentHover}" />
+        <Setter Property="BorderBrush" Value="{StaticResource IndustryAccentPressed}" />
+    </Style>
+
+    <Style Selector="CheckBox /template/ Path#CheckGlyph">
+        <Setter Property="Stroke" Value="{StaticResource IndustryOnAccentText}" />
+        <Setter Property="Fill" Value="{StaticResource IndustryOnAccentText}" />
+    </Style>
+
+    <!-- ═══ Фокус клавиатуры: акцентная рамка вместо системного кольца ═══ -->
+
+    <Style Selector="Button:focus-visible /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="BorderBrush" Value="{StaticResource IndustryAccent}" />
+        <Setter Property="BorderThickness" Value="2" />
+    </Style>
+
+    <!-- ═══ Прочие поверхности: квадратные углы, без теней ═══ -->
+
+    <Style Selector="ToolTip">
+        <Setter Property="CornerRadius" Value="0" />
+        <Setter Property="Background" Value="{StaticResource IndustryBackground}" />
+        <Setter Property="BorderBrush" Value="{StaticResource IndustryFieldBorder}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Foreground" Value="{StaticResource IndustryText}" />
+        <Setter Property="FontFamily" Value="{StaticResource IndustryMonoFont}" />
+        <Setter Property="FontSize" Value="11" />
+    </Style>
+
+    <Style Selector="ScrollBar">
+        <Setter Property="Background" Value="Transparent" />
+    </Style>
+
+    <Style Selector="ScrollBar Thumb">
+        <Setter Property="Background" Value="{StaticResource IndustryFieldBorder}" />
+        <Setter Property="CornerRadius" Value="0" />
+    </Style>
+
+    <Style Selector="ScrollBar Thumb:pointerover">
+        <Setter Property="Background" Value="{StaticResource IndustryAccent}" />
+    </Style>
+
+    <!-- ═══ Типографика ═══ -->
+
+    <Style Selector="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource IndustryBodyFont}" />
+        <Setter Property="Foreground" Value="{StaticResource IndustryText}" />
+    </Style>
+
+    <!-- Заголовки: Barlow Condensed, uppercase, разрядка -->
+
+    <Style Selector="TextBlock.heading">
+        <Setter Property="FontFamily" Value="{StaticResource IndustryHeadingFont}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="LetterSpacing" Value="0.42" />
+    </Style>
+
+    <!-- Бренд в titlebar: 16 px, разрядка .12em -->
+
+    <Style Selector="TextBlock.brand">
+        <Setter Property="FontFamily" Value="{StaticResource IndustryHeadingFont}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="FontSize" Value="16" />
+        <Setter Property="LetterSpacing" Value="1.92" />
+    </Style>
+
+    <!-- Подпись поля в настройках: мелкий uppercase с разрядкой -->
+
+    <Style Selector="TextBlock.label">
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="LetterSpacing" Value="0.88" />
+        <Setter Property="Foreground" Value="{StaticResource IndustryIcon}" />
+    </Style>
+
+    <Style Selector="TextBlock.label.column">
+        <Setter Property="FontSize" Value="10" />
+        <Setter Property="LetterSpacing" Value="0.8" />
+        <Setter Property="Foreground" Value="{StaticResource IndustryMuted}" />
+    </Style>
+
+    <Style Selector="TextBlock.mono">
+        <Setter Property="FontFamily" Value="{StaticResource IndustryMonoFont}" />
+        <Setter Property="FontSize" Value="11.5" />
+    </Style>
+
+    <Style Selector="TextBlock.muted">
+        <Setter Property="Foreground" Value="{StaticResource IndustryMuted}" />
+    </Style>
+
+    <Style Selector="TextBlock.path">
+        <Setter Property="FontFamily" Value="{StaticResource IndustryMonoFont}" />
+        <Setter Property="FontSize" Value="10" />
+        <Setter Property="Foreground" Value="{StaticResource IndustryMuted}" />
+        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    </Style>
+
+</Styles>

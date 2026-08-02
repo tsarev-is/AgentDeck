@@ -1,0 +1,68 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:AgentDeck.ViewModels"
+             x:Class="AgentDeck.Views.TilePlaceholderView"
+             x:DataType="vm:TileViewModel">
+
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                  VerticalScrollBarVisibility="Auto">
+
+        <StackPanel Margin="10" Spacing="10">
+
+            <TextBlock Classes="mono muted"
+                       TextWrapping="Wrap"
+                       Text="New terminal. Choose a directory and launch a CLI:" />
+
+            <Grid ColumnDefinitions="Auto,*">
+                <TextBlock Grid.Column="0"
+                           Classes="mono"
+                           Margin="0,0,7,0"
+                           VerticalAlignment="Center"
+                           Foreground="{StaticResource IndustryAccentText}"
+                           Text="cd" />
+
+                <TextBox Grid.Column="1"
+                         Text="{Binding Directory, Mode=TwoWay}"
+                         PlaceholderText="~"
+                         VerticalAlignment="Center" />
+            </Grid>
+
+            <ItemsControl ItemsSource="{Binding LaunchOptions}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel Orientation="Horizontal" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:LaunchOptionViewModel">
+                        <Button Classes="ghost"
+                                Classes.suggested="{Binding IsSuggested}"
+                                Margin="0,0,7,7"
+                                Content="{Binding Name}"
+                                ToolTip.Tip="{Binding Command}"
+                                Click="OnLaunchClick" />
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <StackPanel Spacing="7"
+                        IsVisible="{Binding HasError}">
+
+                <TextBlock Classes="mono"
+                           Foreground="{StaticResource IndustryAccentText}"
+                           TextWrapping="Wrap"
+                           Text="{Binding Error}" />
+
+                <Button Classes="ghost"
+                        HorizontalAlignment="Left"
+                        Content="Settings"
+                        Click="OnSettingsClick" />
+
+            </StackPanel>
+
+            <TextBlock Classes="mono muted" Text="$ ▌" />
+
+        </StackPanel>
+    </ScrollViewer>
+
+</UserControl>

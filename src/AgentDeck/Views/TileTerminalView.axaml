@@ -1,0 +1,15 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:AgentDeck.ViewModels"
+             xmlns:terminal="using:SvcSystems.UI.Terminal"
+             x:Class="AgentDeck.Views.TileTerminalView"
+             x:DataType="vm:TileViewModel">
+
+    <terminal:TerminalControl x:Name="Terminal"
+                              Margin="6,4"
+                              FontFamily="avares://AgentDeck/Assets/Fonts#JetBrains Mono"
+                              FontSize="12"
+                              CaretBrush="{StaticResource IndustryAccentText}"
+                              SelectionBrush="{StaticResource IndustryAccentPressed}" />
+
+</UserControl>

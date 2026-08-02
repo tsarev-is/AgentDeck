@@ -8,14 +8,24 @@
         <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
         <ApplicationManifest>app.manifest</ApplicationManifest>
         <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+        <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Avalonia" Version="11.3.18" />
-        <PackageReference Include="Avalonia.Desktop" Version="11.3.18" />
-        <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.18" />
-        <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.18" />
-        <PackageReference Include="Avalonia.Diagnostics" Version="11.3.18" Condition="'$(Configuration)' == 'Debug'" />
+        <AvaloniaResource Include="Assets\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Avalonia" Version="12.1.1" />
+        <PackageReference Include="Avalonia.Desktop" Version="12.1.1" />
+        <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.1" />
+    </ItemGroup>
+
+    <!-- Терминальный стек: версии пиновать точно (молодые пакеты, MIT) -->
+    <ItemGroup>
+        <PackageReference Include="Porta.Pty" Version="1.0.7" />
+        <PackageReference Include="XTerm.NET" Version="1.0.15" />
+        <PackageReference Include="SvcSystems.UI.Terminal" Version="1.0.3" />
     </ItemGroup>
 
 </Project>
