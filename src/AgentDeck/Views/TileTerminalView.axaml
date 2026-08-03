@@ -13,7 +13,7 @@
                               FontFamily="avares://AgentDeck/Assets/Fonts#JetBrains Mono"
                               FontSize="12"
                               CaretBrush="{StaticResource IndustryAccentText}"
-                              SelectionBrush="{StaticResource IndustryAccentPressed}"
+                              SelectionBrush="{StaticResource IndustryTerminalSelection}"
                               RightClickAction="None">
 
         <terminal:TerminalControl.ContextMenu>

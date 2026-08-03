@@ -10,6 +10,7 @@
         <ApplicationIcon>icon.ico</ApplicationIcon>
         <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
         <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+        <VersionPrefix>1.0.0</VersionPrefix>
     </PropertyGroup>
 
     <ItemGroup>
