@@ -19,6 +19,7 @@ env:
   DOTNET_NOLOGO: true
   DOTNET_CLI_TELEMETRY_OPTOUT: true
   SOLUTION: src/AgentDeck.sln
+  PROJECT: src/AgentDeck/AgentDeck.csproj
   CONFIGURATION: Release
 
 jobs:
@@ -58,14 +59,54 @@ jobs:
           dotnet test ${{ env.SOLUTION }}
           --configuration ${{ env.CONFIGURATION }}
           --no-build
-          --logger "trx;LogFileName=test-results.trx"
-          --results-directory artifacts/test-results
 
-      # Uploaded even on failure: the .trx names the tests that broke.
-      - name: Upload test results
-        if: ${{ !cancelled() }}
+  publish:
+    name: Publish
+    # Binaries come from main only; branches and pull requests stop after the
+    # tests. A pull_request run carries refs/pull/N/merge here, so it is out.
+    if: github.ref == 'refs/heads/main'
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    env:
+      RID: linux-x64
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v6
+        with:
+          path: ~/.nuget/packages
+          # The runtime pack for the published RID lands here too, so the key
+          # names it: a cache from the test job would be missing that pack.
+          key: nuget-${{ runner.os }}-${{ env.RID }}-${{ hashFiles('src/**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-${{ env.RID }}-
+
+      # The same self-contained single file that scripts/install.sh installs, so
+      # the artifact runs on a machine without the .NET runtime.
+      - name: Publish
+        run: >
+          dotnet publish ${{ env.PROJECT }}
+          --configuration ${{ env.CONFIGURATION }}
+          --runtime ${{ env.RID }}
+          --self-contained true
+          -p:PublishSingleFile=true
+          -p:DebugType=none
+          -p:DebugSymbols=false
+          --output artifacts/publish
+
+      - name: Upload binary
         uses: actions/upload-artifact@v7
         with:
-          name: test-results
-          path: artifacts/test-results
+          name: agentdeck-${{ env.RID }}
+          path: artifacts/publish/AgentDeck
           if-no-files-found: error
+          retention-days: 30
