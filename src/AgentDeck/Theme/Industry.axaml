@@ -36,6 +36,7 @@
         <SolidColorBrush x:Key="IndustryFieldBorder" Color="#f2f2f3" Opacity="0.32" />
         <SolidColorBrush x:Key="IndustryDashedBorder" Color="#f2f2f3" Opacity="0.4" />
         <SolidColorBrush x:Key="IndustryStrongBorder" Color="#f2f2f3" Opacity="0.5" />
+        <SolidColorBrush x:Key="IndustryTerminalSelection" Color="{StaticResource IndustryAccentColor}" Opacity="0.4" />
 
         <!-- Текст: терминал, иконки-кнопки, текст на акцентной заливке -->
         <SolidColorBrush x:Key="IndustryTerminalText" Color="#d4d4d7" />

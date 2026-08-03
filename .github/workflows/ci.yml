@@ -1,112 +1,61 @@
-name: CI
+name: Build & Release
 
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
-  workflow_dispatch:
-
-# A newer push to the same branch supersedes the run in flight.
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write
 
-env:
-  DOTNET_NOLOGO: true
-  DOTNET_CLI_TELEMETRY_OPTOUT: true
-  SOLUTION: src/AgentDeck.sln
-  PROJECT: src/AgentDeck/AgentDeck.csproj
-  CONFIGURATION: Release
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 jobs:
-  build-and-test:
-    name: Build and test
+  release:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
 
-      - name: Set up .NET
-        uses: actions/setup-dotnet@v6
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
 
-      # There is no packages.lock.json here, so the cache is keyed by the
-      # project files that pin the package versions.
-      - name: Cache NuGet packages
-        uses: actions/cache@v6
-        with:
-          path: ~/.nuget/packages
-          key: nuget-${{ runner.os }}-${{ hashFiles('src/**/*.csproj') }}
-          restore-keys: nuget-${{ runner.os }}-
+      - name: Resolve version
+        run: |
+          VERSION=$(dotnet msbuild src/AgentDeck/AgentDeck.csproj -getProperty:VersionPrefix)
+          echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
 
-      - name: Restore
-        run: dotnet restore ${{ env.SOLUTION }}
-
-      - name: Build
-        run: dotnet build ${{ env.SOLUTION }} --configuration ${{ env.CONFIGURATION }} --no-restore
-
-      # The terminal tests start live PTY processes, hence a Linux runner. They
-      # touch no windows, so the job needs no display server.
       - name: Test
+        run: dotnet test src/AgentDeck.Tests/AgentDeck.Tests.csproj -c Release
+
+      - name: Publish linux-x64
         run: >
-          dotnet test ${{ env.SOLUTION }}
-          --configuration ${{ env.CONFIGURATION }}
-          --no-build
+          dotnet publish src/AgentDeck/AgentDeck.csproj
+          -c Release -r linux-x64 --self-contained true
+          -p:Version=${{ env.VERSION }}
+          -o publish/linux-x64
 
-  publish:
-    name: Publish
-    # Binaries come from main only; branches and pull requests stop after the
-    # tests. A pull_request run carries refs/pull/N/merge here, so it is out.
-    if: github.ref == 'refs/heads/main'
-    needs: build-and-test
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-
-    env:
-      RID: linux-x64
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Set up .NET
-        uses: actions/setup-dotnet@v6
-        with:
-          dotnet-version: 10.0.x
-
-      - name: Cache NuGet packages
-        uses: actions/cache@v6
-        with:
-          path: ~/.nuget/packages
-          # The runtime pack for the published RID lands here too, so the key
-          # names it: a cache from the test job would be missing that pack.
-          key: nuget-${{ runner.os }}-${{ env.RID }}-${{ hashFiles('src/**/*.csproj') }}
-          restore-keys: nuget-${{ runner.os }}-${{ env.RID }}-
-
-      # The same self-contained single file that scripts/install.sh installs, so
-      # the artifact runs on a machine without the .NET runtime.
-      - name: Publish
+      - name: Publish win-x64
         run: >
-          dotnet publish ${{ env.PROJECT }}
-          --configuration ${{ env.CONFIGURATION }}
-          --runtime ${{ env.RID }}
-          --self-contained true
-          -p:PublishSingleFile=true
-          -p:DebugType=none
-          -p:DebugSymbols=false
-          --output artifacts/publish
+          dotnet publish src/AgentDeck/AgentDeck.csproj
+          -c Release -r win-x64 --self-contained true
+          -p:Version=${{ env.VERSION }}
+          -o publish/win-x64
 
-      - name: Upload binary
-        uses: actions/upload-artifact@v7
-        with:
-          name: agentdeck-${{ env.RID }}
-          path: artifacts/publish/AgentDeck
-          if-no-files-found: error
-          retention-days: 30
+      - name: Package
+        run: |
+          tar -czf AgentDeck-${VERSION}-linux-x64.tar.gz -C publish/linux-x64 .
+          (cd publish/win-x64 && zip -qr "${GITHUB_WORKSPACE}/AgentDeck-${VERSION}-win-x64.zip" .)
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >
+          gh release create "v${VERSION}"
+          "AgentDeck-${VERSION}-linux-x64.tar.gz"
+          "AgentDeck-${VERSION}-win-x64.zip"
+          --title "AgentDeck v${VERSION}"
+          --generate-notes
