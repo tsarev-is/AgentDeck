@@ -5,11 +5,32 @@
              x:Class="AgentDeck.Views.TileTerminalView"
              x:DataType="vm:TileViewModel">
 
+    <!-- RightClickAction=None: собственное действие контрола по правой кнопке
+         гасило бы событие, из которого Avalonia открывает меню ниже. -->
+
     <terminal:TerminalControl x:Name="Terminal"
                               Margin="6,4"
                               FontFamily="avares://AgentDeck/Assets/Fonts#JetBrains Mono"
                               FontSize="12"
                               CaretBrush="{StaticResource IndustryAccentText}"
-                              SelectionBrush="{StaticResource IndustryAccentPressed}" />
+                              SelectionBrush="{StaticResource IndustryAccentPressed}"
+                              RightClickAction="None">
+
+        <terminal:TerminalControl.ContextMenu>
+            <ContextMenu Opening="OnMenuOpening">
+                <MenuItem Header="Copy"
+                          InputGesture="Ctrl+Shift+C"
+                          IsEnabled="{Binding #Terminal.HasSelection}"
+                          Click="OnCopyClick" />
+                <MenuItem Header="Paste"
+                          InputGesture="Ctrl+Shift+V"
+                          Click="OnPasteClick" />
+                <Separator />
+                <MenuItem Header="Select all"
+                          Click="OnSelectAllClick" />
+            </ContextMenu>
+        </terminal:TerminalControl.ContextMenu>
+
+    </terminal:TerminalControl>
 
 </UserControl>

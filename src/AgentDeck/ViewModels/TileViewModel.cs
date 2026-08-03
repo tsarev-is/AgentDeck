@@ -457,6 +457,35 @@ public sealed class TileViewModel : ViewModelBase, IAsyncDisposable
     }
 
     /// <summary>
+    /// Подхватывает рабочую директорию запущенного процесса: «cd» внутри
+    /// терминала меняет каталог процесса, и тайл обязан догнать его — иначе в
+    /// заголовке остаётся папка, из которой процесс когда-то стартовал.
+    /// </summary>
+    /// <param name="directory">
+    /// Путь от процесса; свёртывается до «~» так же, как введённый руками.
+    /// </param>
+    public void SyncWorkingDirectory(string? directory)
+    {
+        // На плейсхолдере путь набирает пользователь — там перебивать его нечем
+        // и незачем: процесса у тайла нет.
+        if (IsPlaceholder)
+        {
+            return;
+        }
+
+        SetDirectory(PathUtilities.CollapseHome(directory), TimeSpan.Zero);
+    }
+
+    /// <summary>
+    /// Открывает рабочую папку тайла в файловом менеджере — клик по пути в
+    /// заголовке.
+    /// </summary>
+    /// <returns>
+    /// false, если папки нет или файловый менеджер не запустился.
+    /// </returns>
+    public bool OpenDirectory() => FileManager.Open(Directory);
+
+    /// <summary>
     /// Поднимает запрос на закрытие тайла.
     /// </summary>
     public void RequestClose() => CloseRequested?.Invoke(this, EventArgs.Empty);

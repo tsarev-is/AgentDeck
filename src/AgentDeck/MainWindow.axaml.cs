@@ -5,6 +5,7 @@ using Avalonia.Threading;
 using AgentDeck.Session;
 using AgentDeck.Settings;
 using AgentDeck.Status;
+using AgentDeck.Terminal;
 using AgentDeck.ViewModels;
 using AgentDeck.Views;
 
@@ -21,6 +22,7 @@ public partial class MainWindow : Window
     private static readonly TimeSpan SaveDebounce = TimeSpan.FromMilliseconds(500);
 
     private readonly StatusPoller _statusPoller;
+    private readonly WorkingDirectoryPoller _directoryPoller;
     private readonly SessionStore _sessionStore;
     private readonly SettingsStore _settingsStore;
     private readonly DispatcherTimer _saveTimer;
@@ -62,18 +64,33 @@ public partial class MainWindow : Window
         }
 
         _statusPoller = new StatusPoller(deck);
+        _directoryPoller = new WorkingDirectoryPoller(deck);
 
         _saveTimer = new DispatcherTimer(DispatcherPriority.Background) { Interval = SaveDebounce };
         _saveTimer.Tick += OnSaveTimerTick;
 
-        deck.LayoutChanged += OnDeckLayoutChanged;
-        deck.RestartRequested += (_, tile) => _statusPoller.Reset(tile.Id);
-        deck.TileClosed += (_, tile) => _statusPoller.Reset(tile.Id);
+        deck.LayoutChanged += OnSessionDirty;
+        deck.RestartRequested += (_, tile) => ForgetTile(tile.Id);
+        deck.TileClosed += (_, tile) => ForgetTile(tile.Id);
         deck.SettingsRequested += (_, _) => _ = OpenSettingsAsync();
 
-        Opened += (_, _) => _statusPoller.Start();
+        // Тайл, догнавший «cd» своего процесса, меняет сохраняемую директорию
+        // ровно так же, как её меняет пользователь на плейсхолдере.
+        _directoryPoller.DirectoryChanged += OnSessionDirty;
+
+        Opened += (_, _) =>
+        {
+            _statusPoller.Start();
+            _directoryPoller.Start();
+        };
+
         Closing += (_, _) => SaveSession();
-        Closed += (_, _) => _statusPoller.Dispose();
+
+        Closed += (_, _) =>
+        {
+            _statusPoller.Dispose();
+            _directoryPoller.Dispose();
+        };
     }
 
     /// <summary>
@@ -153,11 +170,24 @@ public partial class MainWindow : Window
 
     private void OnSettingsClick(object? sender, RoutedEventArgs e) => _ = OpenSettingsAsync();
 
-    private void OnDeckLayoutChanged(object? sender, EventArgs e)
+    /// <summary>
+    /// Состояние, попадающее в сессию, изменилось — планирует запись на диск.
+    /// </summary>
+    private void OnSessionDirty(object? sender, EventArgs e)
     {
         // Перезапуск таймера схлопывает пачку изменений в одну запись на диск.
         _saveTimer.Stop();
         _saveTimer.Start();
+    }
+
+    /// <summary>
+    /// Сбрасывает всё, что опрашиватели помнят о тайле: его процесс сменился
+    /// или тайла больше нет.
+    /// </summary>
+    private void ForgetTile(Guid tileId)
+    {
+        _statusPoller.Reset(tileId);
+        _directoryPoller.Reset(tileId);
     }
 
     private void OnSaveTimerTick(object? sender, EventArgs e) => SaveSession();

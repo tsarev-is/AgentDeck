@@ -68,6 +68,13 @@ public sealed class TerminalHost : IAsyncDisposable
     public bool IsRunning => _session?.IsRunning == true;
 
     /// <summary>
+    /// Идентификатор живого процесса тайла; null, пока процесса нет или он уже
+    /// завершился — у мёртвого pid спрашивать про процесс нечего, его номер
+    /// система вправе выдать кому-то другому.
+    /// </summary>
+    public int? Pid => _session is { IsRunning: true } session ? session.Pid : null;
+
+    /// <summary>
     /// Код возврата завершившегося процесса.
     /// </summary>
     public int? ExitCode => _session?.ExitCode;
@@ -76,6 +83,27 @@ public sealed class TerminalHost : IAsyncDisposable
     /// Монотонный счётчик изменений буфера: рост означает активность процесса.
     /// </summary>
     public long ChangeCounter => Interlocked.Read(ref _changeCounter);
+
+    /// <summary>
+    /// В буфере есть выделенный мышью текст.
+    /// </summary>
+    public bool HasSelection => _model.HasSelection;
+
+    /// <summary>
+    /// Выделенный текст; пустая строка, если выделения нет.
+    /// </summary>
+    public string SelectedText => _model.SelectedText;
+
+    /// <summary>
+    /// Процесс сам следит за мышью (полноэкранные TUI вроде htop и vim): клики
+    /// принадлежат ему, а не терминалу.
+    /// </summary>
+    public bool IsMouseReporting => _model.IsMouseModeActive;
+
+    /// <summary>
+    /// Процесс включил bracketed paste (DECSET 2004) и ждёт вставку в обёртке.
+    /// </summary>
+    private bool IsBracketedPaste => _model.Terminal?.Engine?.BracketedPasteMode == true;
 
     /// <summary>
     /// Запускает процесс по профилю. Повторный запуск сначала гасит предыдущий.
@@ -170,6 +198,50 @@ public sealed class TerminalHost : IAsyncDisposable
             // Буфер перестраивается параллельно с ресайзом — снимок пропускаем.
             return [];
         }
+    }
+
+    /// <summary>
+    /// Выделяет весь буфер вместе с прокруткой.
+    /// </summary>
+    public void SelectAll() => _model.SelectAll();
+
+    /// <summary>
+    /// Снимает выделение.
+    /// </summary>
+    public void ClearSelection() => _model.ClearSelection();
+
+    /// <summary>
+    /// Отдаёт процессу текст из буфера обмена.
+    /// </summary>
+    /// <param name="text">
+    /// Текст из буфера обмена.
+    /// </param>
+    /// <returns>
+    /// false, если вставлять нечего или процесс уже не читает ввод.
+    /// </returns>
+    public bool Paste(string? text)
+    {
+        // Мёртвый процесс ввод не забирает: вставка в завершённый или упавший
+        // тайл ушла бы в никуда, не оставив на экране следа.
+        if (!IsRunning)
+        {
+            return false;
+        }
+
+        var payload = PasteText.Prepare(text, IsBracketedPaste);
+
+        if (payload.Length == 0)
+        {
+            return false;
+        }
+
+        // Ввод снимает выделение — так делает и сам контрол, когда нажатие
+        // доходит до него. Вставку он не видит: сочетание погашено, а Send
+        // выделения не касается. Оставленное выделение сделало бы следующий
+        // Ctrl+C копированием, отобрав у пользователя прерывание процесса.
+        _model.ClearSelection();
+        _model.Send(payload);
+        return true;
     }
 
     /// <summary>

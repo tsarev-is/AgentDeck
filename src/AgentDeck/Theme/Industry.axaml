@@ -22,7 +22,8 @@
         <SolidColorBrush x:Key="IndustryMuted" Color="{StaticResource IndustryMutedColor}" />
 
         <!-- Тонкая заливка акцентом — hover ghost-кнопок запуска -->
-        <SolidColorBrush x:Key="IndustryAccentWash" Color="#2c455d" />
+        <Color x:Key="IndustryAccentWashColor">#2c455d</Color>
+        <SolidColorBrush x:Key="IndustryAccentWash" Color="{StaticResource IndustryAccentWashColor}" />
 
         <!-- Нейтральная заливка — hover кнопок, не ведущих к запуску -->
         <SolidColorBrush x:Key="IndustryNeutralWash" Color="#2b2b2d" />
@@ -40,6 +41,31 @@
         <SolidColorBrush x:Key="IndustryTerminalText" Color="#d4d4d7" />
         <SolidColorBrush x:Key="IndustryIcon" Color="#98989b" />
         <SolidColorBrush x:Key="IndustryOnAccentText" Color="#f5f5f8" />
+
+        <!-- ═══ Контекстное меню ═══ -->
+
+        <!-- Цвета меню FluentTheme берёт из своих ключей через DynamicResource:
+             подменяем ключи, а не шаблон — так меню сохраняет поведение темы
+             (наведение, нажатие, погашенный пункт), но красится по Industry. -->
+
+        <SolidColorBrush x:Key="MenuFlyoutPresenterBackground" Color="{StaticResource IndustryBackgroundColor}" />
+        <SolidColorBrush x:Key="MenuFlyoutPresenterBorderBrush" Color="{StaticResource IndustryTextColor}" Opacity="0.32" />
+        <SolidColorBrush x:Key="MenuFlyoutItemBackground" Color="Transparent" />
+        <SolidColorBrush x:Key="MenuFlyoutItemBackgroundDisabled" Color="Transparent" />
+        <SolidColorBrush x:Key="MenuFlyoutItemBackgroundPointerOver" Color="{StaticResource IndustryAccentWashColor}" />
+        <SolidColorBrush x:Key="MenuFlyoutItemBackgroundPressed" Color="{StaticResource IndustryAccentPressedColor}" />
+        <SolidColorBrush x:Key="MenuFlyoutItemForeground" Color="{StaticResource IndustryTextColor}" />
+        <SolidColorBrush x:Key="MenuFlyoutItemForegroundPointerOver" Color="{StaticResource IndustryTextColor}" />
+        <SolidColorBrush x:Key="MenuFlyoutItemForegroundPressed" Color="{StaticResource IndustryTextColor}" />
+        <SolidColorBrush x:Key="MenuFlyoutItemForegroundDisabled" Color="{StaticResource IndustryMutedColor}" />
+
+        <!-- Подпись сочетания клавиш в пункте меню — приглушённая во всех
+             состояниях: она подсказка, а не часть команды. -->
+
+        <SolidColorBrush x:Key="MenuFlyoutItemKeyboardAcceleratorTextForeground" Color="{StaticResource IndustryMutedColor}" />
+        <SolidColorBrush x:Key="MenuFlyoutItemKeyboardAcceleratorTextForegroundPointerOver" Color="{StaticResource IndustryMutedColor}" />
+        <SolidColorBrush x:Key="MenuFlyoutItemKeyboardAcceleratorTextForegroundPressed" Color="{StaticResource IndustryMutedColor}" />
+        <SolidColorBrush x:Key="MenuFlyoutItemKeyboardAcceleratorTextForegroundDisabled" Color="{StaticResource IndustryMutedColor}" />
 
         <!-- ═══ Шрифты (embedded, OFL) ═══ -->
 
@@ -177,6 +203,42 @@
     <Style Selector="Button.icon:pressed /template/ ContentPresenter#PART_ContentPresenter">
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="TextElement.Foreground" Value="{StaticResource IndustryAccentText}" />
+    </Style>
+
+    <!-- Путь в заголовке тайла: на вид не кнопка, а текст. Кнопкой он стал
+         ради клика — папка открывается в файловом менеджере, — поэтому от
+         кнопки остаётся только поведение: ни рамки, ни заливки, ни отступов.
+         Что текст кликабельный, показывают курсор и подчёркивание под ним. -->
+
+    <Style Selector="Button.link">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="MinWidth" Value="0" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="HorizontalContentAlignment" Value="Left" />
+        <Setter Property="Cursor" Value="Hand" />
+    </Style>
+
+    <Style Selector="Button.link:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="Transparent" />
+    </Style>
+
+    <Style Selector="Button.link:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="Transparent" />
+    </Style>
+
+    <!-- Цвет содержимому кнопки задаём напрямую: у TextBlock свой Foreground из
+         типографики, и от ContentPresenter он его не наследует. -->
+
+    <Style Selector="Button.link:pointerover TextBlock">
+        <Setter Property="TextDecorations" Value="Underline" />
+        <Setter Property="Foreground" Value="{StaticResource IndustryText}" />
+    </Style>
+
+    <Style Selector="Button.link:pressed TextBlock">
+        <Setter Property="TextDecorations" Value="Underline" />
+        <Setter Property="Foreground" Value="{StaticResource IndustryAccentText}" />
     </Style>
 
     <!-- Чип вложенной папки: контур поля, на hover — только акцентная обводка -->
@@ -396,6 +458,30 @@
     <Style Selector="Button:focus-visible /template/ ContentPresenter#PART_ContentPresenter">
         <Setter Property="BorderBrush" Value="{StaticResource IndustryAccent}" />
         <Setter Property="BorderThickness" Value="2" />
+    </Style>
+
+    <!-- ═══ Контекстные меню: квадратные углы, компактные пункты ═══ -->
+
+    <!-- Селекторы без класса — правила общие для всех меню приложения, а не
+         только для терминального: сегодня оно единственное, но новое меню
+         должно получить тот же вид, не переписывая эти стили. -->
+
+    <Style Selector="ContextMenu">
+        <Setter Property="CornerRadius" Value="0" />
+        <Setter Property="Padding" Value="0,2" />
+        <Setter Property="FontFamily" Value="{StaticResource IndustryBodyFont}" />
+        <Setter Property="FontSize" Value="12" />
+    </Style>
+
+    <Style Selector="MenuItem">
+        <Setter Property="CornerRadius" Value="0" />
+        <Setter Property="Padding" Value="10,3" />
+        <Setter Property="FontFamily" Value="{StaticResource IndustryBodyFont}" />
+        <Setter Property="FontSize" Value="12" />
+    </Style>
+
+    <Style Selector="ContextMenu Separator">
+        <Setter Property="Background" Value="{StaticResource IndustryHairline}" />
     </Style>
 
     <!-- ═══ Прочие поверхности: квадратные углы, без теней ═══ -->

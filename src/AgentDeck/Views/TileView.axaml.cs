@@ -36,5 +36,7 @@ public partial class TileView : UserControl
 
     private void OnCloseClick(object? sender, RoutedEventArgs e) => (DataContext as TileViewModel)?.RequestClose();
 
+    private void OnPathClick(object? sender, RoutedEventArgs e) => (DataContext as TileViewModel)?.OpenDirectory();
+
     private void OnRestartClick(object? sender, RoutedEventArgs e) => (DataContext as TileViewModel)?.RequestRestart();
 }
