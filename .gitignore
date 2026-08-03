@@ -12,6 +12,7 @@
 x64/
 [Bb]in/
 [Oo]bj/
+artifacts/
 .idea/
 
 # MSTest test Results

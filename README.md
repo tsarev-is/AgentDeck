@@ -1,5 +1,7 @@
 # AgentDeck
 
+[![CI](https://github.com/tsarev-is/AgentDeck/actions/workflows/ci.yml/badge.svg)](https://github.com/tsarev-is/AgentDeck/actions/workflows/ci.yml)
+
 A desktop cockpit for console LLM agents. One window holds a deck of up to eight
 real terminals, so `claude`, `codex`, `cursor-agent` and a plain shell all run
 side by side instead of scattered across tabs you keep losing.
