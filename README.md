@@ -26,6 +26,20 @@ clicking through it.
 - **Picking up where you left off.** Close the app and the deck comes back with
   the same layout, folders and tools ready to relaunch.
 
+## Building
+
+Install the [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0), then run from the repository root:
+
+```bash
+dotnet build src/AgentDeck.sln -c Release
+```
+
+To create a self-contained build, use `dotnet publish` with `linux-x64` or `win-x64`:
+
+```bash
+dotnet publish src/AgentDeck/AgentDeck.csproj -c Release -r linux-x64 --self-contained true
+```
+
 ## Keywords
 
 Other names for what this does, in case one of them is what you are looking for:
