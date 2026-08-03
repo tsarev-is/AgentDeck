@@ -24,9 +24,15 @@ public enum DropTargetKind
 /// <summary>
 /// Разрешённая цель броска.
 /// </summary>
-/// <param name="Kind">Тип цели.</param>
-/// <param name="TileId">Тайл-цель; для дока не задан.</param>
-/// <param name="Side">Сторона вставки; для обмена не используется.</param>
+/// <param name="Kind">
+/// Тип цели.
+/// </param>
+/// <param name="TileId">
+/// Тайл-цель; для дока не задан.
+/// </param>
+/// <param name="Side">
+/// Сторона вставки; для обмена не используется.
+/// </param>
 public readonly record struct DropTarget(DropTargetKind Kind, Guid TileId, DockSide Side)
 {
     /// <summary>

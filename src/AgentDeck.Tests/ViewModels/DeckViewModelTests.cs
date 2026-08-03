@@ -390,9 +390,14 @@ public class DeckViewModelTests
         var existing = deck.AddTile()!;
         existing.SuggestAgent("codex");
 
+        // Путь внутри домашней папки: тайл обязан взять его в короткой форме.
+        var configured = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+            "dev");
+
         deck.ApplyUtilities(new AppSettings
         {
-            DefaultDirectory = "/home/user/dev",
+            DefaultDirectory = configured,
             Utilities =
             [
                 new UtilityState { Name = "codex", Command = "/opt/codex", Enabled = true },
@@ -405,7 +410,10 @@ public class DeckViewModelTests
             Assert.That(existing.LaunchOptions.Select(o => o.Name), Is.EqualTo(new[] { "codex", "htop" }));
             Assert.That(existing.LaunchOptions[0].Command, Is.EqualTo("/opt/codex"), "команда должна обновиться");
             Assert.That(existing.LaunchOptions.Single(o => o.IsSuggested).Name, Is.EqualTo("codex"), "подсказка переживает пересборку");
-            Assert.That(deck.AddTile()!.Directory, Is.EqualTo("/home/user/dev"));
+            Assert.That(
+                deck.AddTile()!.Directory,
+                Is.EqualTo($"~{Path.DirectorySeparatorChar}dev"),
+                "тайл живёт с коротким путём");
         });
     }
 
@@ -431,7 +439,7 @@ public class DeckViewModelTests
         Assert.Multiple(() =>
         {
             Assert.That(deck.DefaultDirectory, Is.EqualTo(home));
-            Assert.That(deck.AddTile()!.Directory, Is.EqualTo(home), "новый тайл встаёт в домашнюю папку");
+            Assert.That(deck.AddTile()!.Directory, Is.EqualTo("~"), "новый тайл встаёт в домашнюю папку");
         });
     }
 

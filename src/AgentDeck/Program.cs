@@ -8,6 +8,13 @@ namespace AgentDeck;
 internal static class Program
 {
     /// <summary>
+    /// Идентификатор приложения в рабочем окружении: имя .desktop-файла и имя
+    /// иконки в теме hicolor. Оболочка сопоставляет окно с ярлыком по WM_CLASS,
+    /// поэтому без этого значения панель задач берёт иконку не из темы.
+    /// </summary>
+    private const string AppId = "agentdeck";
+
+    /// <summary>
     /// Инициализирует и запускает Avalonia-приложение.
     /// </summary>
     [STAThread]
@@ -20,5 +27,6 @@ internal static class Program
     public static AppBuilder BuildAvaloniaApp()
         => AppBuilder.Configure<App>()
             .UsePlatformDetect()
+            .With(new X11PlatformOptions { WmClass = AppId })
             .LogToTrace();
 }

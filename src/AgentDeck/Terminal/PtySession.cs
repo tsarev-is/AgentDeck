@@ -60,12 +60,24 @@ public sealed class PtySession : IAsyncDisposable
     /// <summary>
     /// Запускает процесс по профилю в PTY указанного размера.
     /// </summary>
-    /// <param name="profile">Что и где запускать.</param>
-    /// <param name="cols">Ширина PTY в символах.</param>
-    /// <param name="rows">Высота PTY в строках.</param>
-    /// <param name="onOutput">Приём вывода; вызывается из фонового потока.</param>
-    /// <param name="onExited">Вызывается при обрыве потока вывода.</param>
-    /// <param name="cancellationToken">Отмена запуска.</param>
+    /// <param name="profile">
+    /// Что и где запускать.
+    /// </param>
+    /// <param name="cols">
+    /// Ширина PTY в символах.
+    /// </param>
+    /// <param name="rows">
+    /// Высота PTY в строках.
+    /// </param>
+    /// <param name="onOutput">
+    /// Приём вывода; вызывается из фонового потока.
+    /// </param>
+    /// <param name="onExited">
+    /// Вызывается при обрыве потока вывода.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// Отмена запуска.
+    /// </param>
     public static async Task<PtySession> StartAsync(
         AgentLaunchProfile profile,
         int cols,

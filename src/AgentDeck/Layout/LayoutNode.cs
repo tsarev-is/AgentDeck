@@ -60,8 +60,12 @@ public sealed class LeafNode : LayoutNode
 /// <summary>
 /// Ребёнок сплита вместе с его долей области родителя.
 /// </summary>
-/// <param name="Node">Поддерево ребёнка.</param>
-/// <param name="Ratio">Доля области родителя вдоль оси сплита; сумма долей равна 1.</param>
+/// <param name="Node">
+/// Поддерево ребёнка.
+/// </param>
+/// <param name="Ratio">
+/// Доля области родителя вдоль оси сплита; сумма долей равна 1.
+/// </param>
 public sealed record SplitChild(LayoutNode Node, double Ratio);
 
 /// <summary>

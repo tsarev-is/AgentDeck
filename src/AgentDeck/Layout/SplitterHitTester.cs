@@ -3,9 +3,15 @@ namespace AgentDeck.Layout;
 /// <summary>
 /// Визуальный сплиттер — граница между двумя соседними детьми одного сплита.
 /// </summary>
-/// <param name="Node">Сплит, которому принадлежит граница.</param>
-/// <param name="Index">Индекс ребёнка слева/сверху от границы.</param>
-/// <param name="Position">Координата границы в пикселях вдоль оси сплита.</param>
+/// <param name="Node">
+/// Сплит, которому принадлежит граница.
+/// </param>
+/// <param name="Index">
+/// Индекс ребёнка слева/сверху от границы.
+/// </param>
+/// <param name="Position">
+/// Координата границы в пикселях вдоль оси сплита.
+/// </param>
 public readonly record struct SplitterHandle(SplitNode Node, int Index, double Position)
 {
     /// <summary>
@@ -18,8 +24,12 @@ public readonly record struct SplitterHandle(SplitNode Node, int Index, double P
 /// Захваченные под курсором сплиттеры: по одному на ось. Обе оси сразу —
 /// это угол между четырьмя тайлами, и тянуть надо оба.
 /// </summary>
-/// <param name="Columns">Вертикальная граница: двигается по X.</param>
-/// <param name="Rows">Горизонтальная граница: двигается по Y.</param>
+/// <param name="Columns">
+/// Вертикальная граница: двигается по X.
+/// </param>
+/// <param name="Rows">
+/// Горизонтальная граница: двигается по Y.
+/// </param>
 public readonly record struct SplitterGrab(SplitterHandle? Columns, SplitterHandle? Rows)
 {
     /// <summary>

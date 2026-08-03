@@ -4,65 +4,199 @@
              x:Class="AgentDeck.Views.TilePlaceholderView"
              x:DataType="vm:TileViewModel">
 
-    <ScrollViewer HorizontalScrollBarVisibility="Disabled"
-                  VerticalScrollBarVisibility="Auto">
+    <!-- Папки, ошибка и запуск идут одним потоком в прокрутке: кнопки запуска
+         следуют за папками, а не висят у нижней границы тайла. -->
 
-        <StackPanel Margin="10" Spacing="10">
+    <Grid Margin="10" RowDefinitions="Auto,Auto,Auto,*">
 
-            <TextBlock Classes="mono muted"
-                       TextWrapping="Wrap"
-                       Text="New terminal. Choose a directory and launch a CLI:" />
+        <!-- Подсказка -->
+        <TextBlock Grid.Row="0"
+                   Classes="mono muted"
+                   Margin="0,0,0,8"
+                   TextWrapping="Wrap"
+                   Text="New terminal. Pick a directory and launch a CLI:" />
 
-            <Grid ColumnDefinitions="Auto,*">
-                <TextBlock Grid.Column="0"
-                           Classes="mono"
-                           Margin="0,0,7,0"
-                           VerticalAlignment="Center"
-                           Foreground="{StaticResource IndustryAccentText}"
-                           Text="cd" />
+        <!-- Рабочая директория и переход на уровень выше -->
+        <Grid Grid.Row="1"
+              Margin="0,0,0,8"
+              ColumnDefinitions="Auto,*,Auto">
 
-                <TextBox Grid.Column="1"
-                         Text="{Binding Directory, Mode=TwoWay}"
-                         PlaceholderText="~"
-                         VerticalAlignment="Center" />
-            </Grid>
+            <TextBlock Grid.Column="0"
+                       Classes="mono"
+                       Margin="0,0,7,0"
+                       VerticalAlignment="Center"
+                       Foreground="{StaticResource IndustryAccentText}"
+                       Text="cd" />
 
-            <ItemsControl ItemsSource="{Binding LaunchOptions}">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <WrapPanel Orientation="Horizontal" />
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="vm:LaunchOptionViewModel">
-                        <Button Classes="ghost"
-                                Classes.suggested="{Binding IsSuggested}"
-                                Margin="0,0,7,7"
-                                Content="{Binding Name}"
-                                ToolTip.Tip="{Binding Command}"
-                                Click="OnLaunchClick" />
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
+            <TextBox Grid.Column="1"
+                     Text="{Binding Directory, Mode=TwoWay}"
+                     PlaceholderText="~"
+                     VerticalAlignment="Center" />
 
-            <StackPanel Spacing="7"
-                        IsVisible="{Binding HasError}">
+            <Button Grid.Column="2"
+                    Classes="step"
+                    Margin="7,0,0,0"
+                    IsEnabled="{Binding CanGoUp}"
+                    ToolTip.Tip="Up one level (Alt+↑)"
+                    Click="OnUpClick">
 
-                <TextBlock Classes="mono"
-                           Foreground="{StaticResource IndustryAccentText}"
+                <Path Width="12"
+                      Height="12"
+                      Stretch="Uniform"
+                      StrokeThickness="1"
+                      Data="M 12 19 V 5 M 5 12 L 12 5 L 19 12" />
+
+            </Button>
+
+        </Grid>
+
+        <!-- Поиск по вложенным папкам -->
+        <TextBox Grid.Row="2"
+                 x:Name="FilterBox"
+                 Classes="subtle"
+                 Margin="0,0,0,8"
+                 Text="{Binding Filter, Mode=TwoWay}"
+                 PlaceholderText="filter folders…" />
+
+        <!-- Вложенные папки, ошибка запуска и кнопки запуска -->
+        <ScrollViewer Grid.Row="3"
+                      HorizontalScrollBarVisibility="Disabled"
+                      VerticalScrollBarVisibility="Auto">
+
+            <StackPanel VerticalAlignment="Top">
+
+                <ItemsControl ItemsSource="{Binding FolderChips}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+
+                    <!-- Чип «показать ещё» стоит последним в той же полосе, что и
+                         папки, поэтому шаблон выбирается по типу чипа, а ItemTemplate
+                         тут не годится: он «главный» и подошёл бы обоим. Тип задаёт
+                         именно DataType, а не x:DataType: x:DataType — подсказка
+                         компилятору привязок, в рантайме её нет, и первый шаблон
+                         отрисовал бы оба чипа. -->
+
+                    <ItemsControl.DataTemplates>
+
+                        <DataTemplate DataType="vm:FolderEntryViewModel">
+
+                            <Button Classes="chip"
+                                    Margin="0,0,5,5"
+                                    ToolTip.Tip="{Binding FullPath}"
+                                    Click="OnFolderClick">
+
+                                <StackPanel Orientation="Horizontal">
+
+                                    <Path Width="11"
+                                          Height="11"
+                                          Margin="0,0,5,0"
+                                          VerticalAlignment="Center"
+                                          Stretch="Uniform"
+                                          StrokeThickness="1"
+                                          Opacity="0.6"
+                                          Data="M 4 20 h 16 a 2 2 0 0 0 2 -2 V 8 a 2 2 0 0 0 -2 -2 h -7.9 a 2 2 0 0 1 -1.69 -0.9 L 9.6 3.9 A 2 2 0 0 0 7.93 3 H 4 a 2 2 0 0 0 -2 2 v 13 c 0 1.1 0.9 2 2 2 Z" />
+
+                                    <TextBlock Classes="mono"
+                                               VerticalAlignment="Center"
+                                               Text="{Binding Name}" />
+
+                                </StackPanel>
+                            </Button>
+
+                        </DataTemplate>
+
+                        <!-- Пунктирную рамку рисует Rectangle внутри кнопки: ни у
+                             Button, ни у Border пунктира нет — штрихи умеют только
+                             фигуры. Своя рамка кнопки поэтому выключена, а отступ
+                             11,4 = 10,3 по макету плюс тот самый пиксель рамки. -->
+
+                        <DataTemplate DataType="vm:MoreFoldersViewModel">
+
+                            <Button Classes="chip more"
+                                    Margin="0,0,5,5"
+                                    ToolTip.Tip="Show more folders"
+                                    Click="OnShowMoreClick">
+
+                                <Panel>
+
+                                    <Rectangle />
+
+                                    <TextBlock Classes="mono"
+                                               Margin="11,4"
+                                               VerticalAlignment="Center"
+                                               Text="{Binding Label}" />
+
+                                </Panel>
+                            </Button>
+
+                        </DataTemplate>
+
+                    </ItemsControl.DataTemplates>
+                </ItemsControl>
+
+                <TextBlock Classes="mono muted"
                            TextWrapping="Wrap"
-                           Text="{Binding Error}" />
+                           IsVisible="{Binding HasFolderHint}"
+                           Text="{Binding FolderHint}" />
 
-                <Button Classes="ghost"
-                        HorizontalAlignment="Left"
-                        Content="Settings"
-                        Click="OnSettingsClick" />
+                <!-- Ошибка запуска -->
+                <StackPanel Margin="0,8,0,0"
+                            Spacing="7"
+                            IsVisible="{Binding HasError}">
+
+                    <TextBlock Classes="mono"
+                               Foreground="{StaticResource IndustryAccentText}"
+                               TextWrapping="Wrap"
+                               Text="{Binding Error}" />
+
+                    <Button Classes="ghost"
+                            HorizontalAlignment="Left"
+                            Content="Settings"
+                            Click="OnSettingsClick" />
+
+                </StackPanel>
+
+                <!-- Запуск утилиты -->
+                <Border Margin="0,8,0,0"
+                        Padding="0,8,0,0"
+                        BorderBrush="{StaticResource IndustryHairline}"
+                        BorderThickness="0,1,0,0">
+
+                    <Grid ColumnDefinitions="Auto,*">
+
+                        <TextBlock Grid.Column="0"
+                                   Classes="mono muted"
+                                   Margin="0,0,7,0"
+                                   VerticalAlignment="Center"
+                                   Text="launch:" />
+
+                        <ItemsControl Grid.Column="1" ItemsSource="{Binding LaunchOptions}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel Orientation="Horizontal" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:LaunchOptionViewModel">
+                                    <Button Classes="ghost"
+                                            Classes.suggested="{Binding IsSuggested}"
+                                            Margin="0,0,7,7"
+                                            Content="{Binding Name}"
+                                            ToolTip.Tip="{Binding Command}"
+                                            Click="OnLaunchClick" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                    </Grid>
+                </Border>
 
             </StackPanel>
+        </ScrollViewer>
 
-            <TextBlock Classes="mono muted" Text="$ ▌" />
-
-        </StackPanel>
-    </ScrollViewer>
+    </Grid>
 
 </UserControl>

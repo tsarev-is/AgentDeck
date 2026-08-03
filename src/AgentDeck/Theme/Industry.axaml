@@ -24,6 +24,12 @@
         <!-- Тонкая заливка акцентом — hover ghost-кнопок запуска -->
         <SolidColorBrush x:Key="IndustryAccentWash" Color="#2c455d" />
 
+        <!-- Нейтральная заливка — hover кнопок, не ведущих к запуску -->
+        <SolidColorBrush x:Key="IndustryNeutralWash" Color="#2b2b2d" />
+
+        <!-- Приглушённый глиф: иконка навигации рядом с полем пути -->
+        <SolidColorBrush x:Key="IndustrySubtleText" Color="#b7b7ba" />
+
         <!-- Границы: hairline .16, поле ввода .32, dashed .4, strong .5 -->
         <SolidColorBrush x:Key="IndustryHairline" Color="#f2f2f3" Opacity="0.16" />
         <SolidColorBrush x:Key="IndustryFieldBorder" Color="#f2f2f3" Opacity="0.32" />
@@ -173,6 +179,136 @@
         <Setter Property="TextElement.Foreground" Value="{StaticResource IndustryAccentText}" />
     </Style>
 
+    <!-- Чип вложенной папки: контур поля, на hover — только акцентная обводка -->
+
+    <Style Selector="Button.chip">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{StaticResource IndustryFieldBorder}" />
+        <Setter Property="Foreground" Value="{StaticResource IndustryTerminalText}" />
+        <Setter Property="FontFamily" Value="{StaticResource IndustryMonoFont}" />
+        <Setter Property="FontSize" Value="11.5" />
+        <Setter Property="FontWeight" Value="Normal" />
+        <Setter Property="Padding" Value="8,3" />
+    </Style>
+
+    <!-- Заливки у чипа нет: подсвечиваются только рамка и текст -->
+
+    <Style Selector="Button.chip:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{StaticResource IndustryAccent}" />
+        <Setter Property="TextElement.Foreground" Value="{StaticResource IndustryAccentText}" />
+    </Style>
+
+    <Style Selector="Button.chip:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource IndustryAccentWash}" />
+        <Setter Property="BorderBrush" Value="{StaticResource IndustryAccent}" />
+        <Setter Property="TextElement.Foreground" Value="{StaticResource IndustryAccentText}" />
+    </Style>
+
+    <!-- Содержимое чипа цвет от ContentPresenter не наследует: у TextBlock свой
+         Foreground из типографики, у Path — Stroke. Красим оба явно. -->
+
+    <Style Selector="Button.chip Path">
+        <Setter Property="Stroke" Value="{StaticResource IndustryTerminalText}" />
+    </Style>
+
+    <Style Selector="Button.chip TextBlock">
+        <Setter Property="Foreground" Value="{StaticResource IndustryTerminalText}" />
+    </Style>
+
+    <Style Selector="Button.chip:pointerover Path">
+        <Setter Property="Stroke" Value="{StaticResource IndustryAccentText}" />
+    </Style>
+
+    <Style Selector="Button.chip:pointerover TextBlock">
+        <Setter Property="Foreground" Value="{StaticResource IndustryAccentText}" />
+    </Style>
+
+    <Style Selector="Button.chip:pressed Path">
+        <Setter Property="Stroke" Value="{StaticResource IndustryAccentText}" />
+    </Style>
+
+    <Style Selector="Button.chip:pressed TextBlock">
+        <Setter Property="Foreground" Value="{StaticResource IndustryAccentText}" />
+    </Style>
+
+    <!-- Чип «показать ещё»: пунктир и приглушённый текст — он не папка, а ключ к
+         остатку списка. Пунктир рисует Rectangle из содержимого чипа: рамка
+         кнопки бывает только сплошной. Своя рамка поэтому выключена, а отступ
+         унесён в содержимое — иначе пунктир лёг бы вплотную к тексту. -->
+
+    <Style Selector="Button.chip.more">
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="0" />
+    </Style>
+
+    <Style Selector="Button.chip.more Rectangle">
+        <Setter Property="Stroke" Value="{StaticResource IndustryFieldBorder}" />
+        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="StrokeDashArray" Value="2,2" />
+    </Style>
+
+    <Style Selector="Button.chip.more TextBlock">
+        <Setter Property="Foreground" Value="{StaticResource IndustryMuted}" />
+    </Style>
+
+    <!-- Наведение и нажатие объявляем заново: у Avalonia нет специфичности, из
+         двух подходящих стилей выигрывает последний, а общие для чипа правила
+         стоят выше. -->
+
+    <Style Selector="Button.chip.more:pointerover Rectangle">
+        <Setter Property="Stroke" Value="{StaticResource IndustryAccent}" />
+    </Style>
+
+    <Style Selector="Button.chip.more:pointerover TextBlock">
+        <Setter Property="Foreground" Value="{StaticResource IndustryAccentText}" />
+    </Style>
+
+    <Style Selector="Button.chip.more:pressed Rectangle">
+        <Setter Property="Stroke" Value="{StaticResource IndustryAccent}" />
+    </Style>
+
+    <Style Selector="Button.chip.more:pressed TextBlock">
+        <Setter Property="Foreground" Value="{StaticResource IndustryAccentText}" />
+    </Style>
+
+    <!-- Кнопка «на уровень выше» у поля пути: нейтральный hover, без акцента -->
+
+    <Style Selector="Button.step">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{StaticResource IndustryFieldBorder}" />
+        <Setter Property="Foreground" Value="{StaticResource IndustrySubtleText}" />
+        <Setter Property="Padding" Value="7,4" />
+    </Style>
+
+    <Style Selector="Button.step:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource IndustryNeutralWash}" />
+        <Setter Property="BorderBrush" Value="{StaticResource IndustryFieldBorder}" />
+        <Setter Property="TextElement.Foreground" Value="{StaticResource IndustryText}" />
+    </Style>
+
+    <Style Selector="Button.step:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource IndustryAccentPressed}" />
+        <Setter Property="BorderBrush" Value="{StaticResource IndustryAccentPressed}" />
+    </Style>
+
+    <Style Selector="Button.step Path">
+        <Setter Property="Stroke" Value="{StaticResource IndustrySubtleText}" />
+    </Style>
+
+    <Style Selector="Button.step:pointerover Path">
+        <Setter Property="Stroke" Value="{StaticResource IndustryText}" />
+    </Style>
+
+    <Style Selector="Button.step:disabled Path">
+        <Setter Property="Stroke" Value="{StaticResource IndustrySubtleText}" />
+    </Style>
+
+    <Style Selector="Button.step:disabled /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{StaticResource IndustryFieldBorder}" />
+    </Style>
+
     <!-- ═══ Поля ввода ═══ -->
 
     <Style Selector="TextBox">
@@ -195,6 +331,13 @@
         <Setter Property="BorderBrush" Value="{StaticResource IndustryFieldBorder}" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="MinHeight" Value="0" />
+    </Style>
+
+    <!-- Второстепенное поле (поиск по папкам): рамка легче, чем у поля пути.
+         Стиль объявлен до hover и focus, чтобы те по-прежнему давали акцент. -->
+
+    <Style Selector="TextBox.subtle /template/ Border#PART_BorderElement">
+        <Setter Property="BorderBrush" Value="{StaticResource IndustryHairline}" />
     </Style>
 
     <Style Selector="TextBox:pointerover /template/ Border#PART_BorderElement">

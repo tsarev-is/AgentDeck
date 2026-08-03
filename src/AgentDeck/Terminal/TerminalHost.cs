@@ -126,7 +126,9 @@ public sealed class TerminalHost : IAsyncDisposable
     /// <summary>
     /// Поднимает PTY, отменяя старт вместе с гашением хоста.
     /// </summary>
-    /// <returns>null, если старт отменён гашением.</returns>
+    /// <returns>
+    /// null, если старт отменён гашением.
+    /// </returns>
     private async Task<PtySession?> SpawnAsync(AgentLaunchProfile profile, CancellationToken cancellationToken)
     {
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _lifetime.Token);

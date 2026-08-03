@@ -13,18 +13,30 @@ public sealed class DeckViewModel : ViewModelBase
 {
     private readonly ObservableCollection<TileViewModel> _tiles = [];
     private readonly CommandResolver _commandResolver;
+    private readonly DirectoryBrowser _browser;
 
     private IReadOnlyList<UtilityState> _utilities = [];
 
     /// <summary>
     /// Создаёт пустой дек поверх указанных настроек.
     /// </summary>
-    /// <param name="settings">Настройки приложения; по умолчанию — штатные.</param>
-    /// <param name="commandResolver">Проверка команд перед запуском; по умолчанию системная.</param>
-    public DeckViewModel(AppSettings? settings = null, CommandResolver? commandResolver = null)
+    /// <param name="settings">
+    /// Настройки приложения; по умолчанию — штатные.
+    /// </param>
+    /// <param name="commandResolver">
+    /// Проверка команд перед запуском; по умолчанию системная.
+    /// </param>
+    /// <param name="browser">
+    /// Чтение вложенных директорий тайлами; по умолчанию системное.
+    /// </param>
+    public DeckViewModel(
+        AppSettings? settings = null,
+        CommandResolver? commandResolver = null,
+        DirectoryBrowser? browser = null)
     {
         Tiles = new ReadOnlyObservableCollection<TileViewModel>(_tiles);
         _commandResolver = commandResolver ?? new CommandResolver();
+        _browser = browser ?? new DirectoryBrowser();
         DefaultDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         ApplyUtilities(settings ?? AppSettings.CreateDefault());
     }
@@ -197,7 +209,9 @@ public sealed class DeckViewModel : ViewModelBase
     /// плейсхолдерами с префилленной директорией и акцентированной кнопкой
     /// сохранённого агента. Процессы не запускаются.
     /// </summary>
-    /// <returns>false, если состояние повреждено и нужен чистый старт.</returns>
+    /// <returns>
+    /// false, если состояние повреждено и нужен чистый старт.
+    /// </returns>
     public bool RestoreSession(SessionState? state)
     {
         if (state is null)
@@ -273,7 +287,10 @@ public sealed class DeckViewModel : ViewModelBase
     /// </summary>
     private TileViewModel CreateTile(Guid id, string directory)
     {
-        var tile = new TileViewModel(id, directory, _commandResolver);
+        // Единственная точка, где путь попадает в тайл, — значит и единственное
+        // место, где его форму стоит нормализовать. Тайл живёт с коротким путём:
+        // раскрытый «~» съедал бы место и в поле «cd», и в заголовке.
+        var tile = new TileViewModel(id, PathUtilities.CollapseHome(directory), _commandResolver, _browser);
         tile.SetLaunchOptions(_utilities);
         return tile;
     }

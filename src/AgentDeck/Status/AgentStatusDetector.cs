@@ -5,10 +5,18 @@ namespace AgentDeck.Status;
 /// <summary>
 /// Снимок состояния тайла на очередном тике опроса.
 /// </summary>
-/// <param name="Rows">Последние строки видимой области буфера.</param>
-/// <param name="ChangeCounter">Монотонный счётчик изменений буфера.</param>
-/// <param name="Exited">Процесс завершился.</param>
-/// <param name="ExitCode">Код возврата, если процесс завершился.</param>
+/// <param name="Rows">
+/// Последние строки видимой области буфера.
+/// </param>
+/// <param name="ChangeCounter">
+/// Монотонный счётчик изменений буфера.
+/// </param>
+/// <param name="Exited">
+/// Процесс завершился.
+/// </param>
+/// <param name="ExitCode">
+/// Код возврата, если процесс завершился.
+/// </param>
 public readonly record struct StatusSnapshot(
     IReadOnlyList<string> Rows,
     long ChangeCounter,

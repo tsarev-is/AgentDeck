@@ -6,11 +6,21 @@ namespace AgentDeck.Terminal;
 /// <summary>
 /// Команда запуска CLI в PTY: исполняемый файл, аргументы, рабочая директория и окружение.
 /// </summary>
-/// <param name="Kind">Тип запускаемого CLI.</param>
-/// <param name="App">Путь к исполняемому файлу.</param>
-/// <param name="CommandLine">Аргументы (без argv[0]).</param>
-/// <param name="WorkingDirectory">Рабочая директория процесса.</param>
-/// <param name="Environment">Переменные окружения процесса.</param>
+/// <param name="Kind">
+/// Тип запускаемого CLI.
+/// </param>
+/// <param name="App">
+/// Путь к исполняемому файлу.
+/// </param>
+/// <param name="CommandLine">
+/// Аргументы (без argv[0]).
+/// </param>
+/// <param name="WorkingDirectory">
+/// Рабочая директория процесса.
+/// </param>
+/// <param name="Environment">
+/// Переменные окружения процесса.
+/// </param>
 public sealed record AgentLaunchProfile(
     AgentKind Kind,
     string App,
@@ -41,9 +51,15 @@ public sealed record AgentLaunchProfile(
     /// Строит профиль запуска: команда утилиты идёт через shell пользователя,
     /// чтобы окружение совпадало с его терминалом, пустая команда — это сам shell.
     /// </summary>
-    /// <param name="kind">Профиль паттернов статуса запускаемой утилиты.</param>
-    /// <param name="command">Команда утилиты; пустая означает интерактивный shell.</param>
-    /// <param name="directory">Рабочая директория процесса.</param>
+    /// <param name="kind">
+    /// Профиль паттернов статуса запускаемой утилиты.
+    /// </param>
+    /// <param name="command">
+    /// Команда утилиты; пустая означает интерактивный shell.
+    /// </param>
+    /// <param name="directory">
+    /// Рабочая директория процесса.
+    /// </param>
     public static AgentLaunchProfile Create(AgentKind kind, string? command, string directory)
     {
         var environment = BuildEnvironment();

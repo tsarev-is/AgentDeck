@@ -28,9 +28,15 @@ public sealed class StatusPoller : IDisposable
     /// <summary>
     /// Создаёт опрашиватель для указанного дека.
     /// </summary>
-    /// <param name="deck">Дек, тайлы которого опрашиваются.</param>
-    /// <param name="interval">Период опроса; по умолчанию 500 мс.</param>
-    /// <param name="clock">Часы детекторов; по умолчанию системные.</param>
+    /// <param name="deck">
+    /// Дек, тайлы которого опрашиваются.
+    /// </param>
+    /// <param name="interval">
+    /// Период опроса; по умолчанию 500 мс.
+    /// </param>
+    /// <param name="clock">
+    /// Часы детекторов; по умолчанию системные.
+    /// </param>
     /// <param name="useTimer">
     /// false отключает собственный таймер — тик подаётся вручную из тестов.
     /// </param>

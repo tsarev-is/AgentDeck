@@ -5,6 +5,7 @@
         x:Class="AgentDeck.MainWindow"
         x:DataType="vm:DeckViewModel"
         Title="AgentDeck"
+        Icon="/Assets/icon.png"
         Width="1280" Height="800"
         MinWidth="640" MinHeight="400"
         Background="{StaticResource IndustryBackground}"

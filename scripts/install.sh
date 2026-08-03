@@ -37,6 +37,9 @@ readonly BIN_DIR="${PREFIX}/bin"
 readonly DESKTOP_DIR="${PREFIX}/share/applications"
 readonly DESKTOP_FILE="${DESKTOP_DIR}/${BIN_NAME}.desktop"
 readonly TARGET="${BIN_DIR}/${BIN_NAME}"
+readonly ICON_ROOT="${PREFIX}/share/icons/hicolor"
+readonly ICON_SOURCE_DIR="${REPO_ROOT}/assets/icons"
+readonly ICON_SIZES=(16 22 24 32 48 64 128 256 512)
 
 # Writing outside $HOME normally needs root, so re-exec through sudo.
 SUDO=""
@@ -45,11 +48,28 @@ if [[ ! -w "$(dirname -- "${PREFIX}")" && ! -w "${PREFIX}" ]]; then
     SUDO="sudo"
 fi
 
+# Desktop shells serve launchers and icons from caches, so an install stays
+# invisible (or keeps the previous icon) until those are rebuilt. KDE's cache
+# belongs to the current user, hence no sudo for it.
+refresh_caches() {
+    command -v update-desktop-database >/dev/null &&
+        ${SUDO} update-desktop-database -q "${DESKTOP_DIR}" 2>/dev/null || true
+    command -v gtk-update-icon-cache >/dev/null &&
+        ${SUDO} gtk-update-icon-cache -qtf "${ICON_ROOT}" 2>/dev/null || true
+    command -v kbuildsycoca6 >/dev/null &&
+        kbuildsycoca6 --noincremental >/dev/null 2>&1 || true
+}
+
 if [[ ${UNINSTALL} -eq 1 ]]; then
     info "Removing ${TARGET} and ${DESKTOP_FILE}"
     ${SUDO} rm -f -- "${TARGET}" "${DESKTOP_FILE}"
-    command -v update-desktop-database >/dev/null &&
-        ${SUDO} update-desktop-database -q "${DESKTOP_DIR}" 2>/dev/null || true
+
+    info "Removing icons from ${ICON_ROOT}"
+    for size in "${ICON_SIZES[@]}"; do
+        ${SUDO} rm -f -- "${ICON_ROOT}/${size}x${size}/apps/${BIN_NAME}.png"
+    done
+
+    refresh_caches
     info "${APP_NAME} uninstalled."
     exit 0
 fi
@@ -82,6 +102,16 @@ dotnet publish "${PROJECT}" \
 info "Installing to ${TARGET}"
 ${SUDO} install -Dm755 "${STAGE}/${APP_NAME}" "${TARGET}"
 
+# The launcher and the window manager pick the icon up from the hicolor theme by
+# its name, so every prerendered size goes into the matching directory.
+info "Installing icons to ${ICON_ROOT}"
+for size in "${ICON_SIZES[@]}"; do
+    icon="${ICON_SOURCE_DIR}/${BIN_NAME}-${size}.png"
+    [[ -f "${icon}" ]] ||
+        { warn "missing icon size: ${icon}"; continue; }
+    ${SUDO} install -Dm644 "${icon}" "${ICON_ROOT}/${size}x${size}/apps/${BIN_NAME}.png"
+done
+
 # A launcher entry so the app shows up in the desktop menu, not just in $PATH.
 info "Installing desktop entry to ${DESKTOP_FILE}"
 ${SUDO} install -d "${DESKTOP_DIR}"
@@ -91,15 +121,14 @@ Type=Application
 Name=${APP_NAME}
 Comment=A desktop cockpit for console LLM agents
 Exec=${TARGET}
-Icon=utilities-terminal
+Icon=${BIN_NAME}
 Terminal=false
 Categories=Development;
 Keywords=terminal;agent;llm;claude;codex;
-StartupWMClass=${APP_NAME}
+StartupWMClass=${BIN_NAME}
 EOF
 
-command -v update-desktop-database >/dev/null &&
-    ${SUDO} update-desktop-database -q "${DESKTOP_DIR}" 2>/dev/null || true
+refresh_caches
 
 case ":${PATH}:" in
     *":${BIN_DIR}:"*) ;;

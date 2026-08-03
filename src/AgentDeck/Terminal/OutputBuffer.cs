@@ -26,7 +26,9 @@ public sealed class OutputBuffer
     /// <summary>
     /// Создаёт накопитель.
     /// </summary>
-    /// <param name="capacityBytes">Потолок накопленного; по умолчанию 2 МБ.</param>
+    /// <param name="capacityBytes">
+    /// Потолок накопленного; по умолчанию 2 МБ.
+    /// </param>
     public OutputBuffer(int? capacityBytes = null)
     {
         _capacityBytes = Math.Max(1, capacityBytes ?? DefaultCapacityBytes);
@@ -63,7 +65,9 @@ public sealed class OutputBuffer
     /// <summary>
     /// Добавляет чанк вывода.
     /// </summary>
-    /// <param name="chunk">Прочитанные из PTY байты.</param>
+    /// <param name="chunk">
+    /// Прочитанные из PTY байты.
+    /// </param>
     /// <returns>
     /// true, если разгребание нужно запланировать; false — оно уже запланировано
     /// и подхватит этот чанк.

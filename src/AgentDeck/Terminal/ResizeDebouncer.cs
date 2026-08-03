@@ -29,9 +29,15 @@ public sealed class ResizeDebouncer
     /// <summary>
     /// Создаёт debouncer.
     /// </summary>
-    /// <param name="apply">Отправка размера в PTY.</param>
-    /// <param name="delay">Окно схлопывания; по умолчанию 100 мс.</param>
-    /// <param name="clock">Источник времени; по умолчанию системные часы.</param>
+    /// <param name="apply">
+    /// Отправка размера в PTY.
+    /// </param>
+    /// <param name="delay">
+    /// Окно схлопывания; по умолчанию 100 мс.
+    /// </param>
+    /// <param name="clock">
+    /// Источник времени; по умолчанию системные часы.
+    /// </param>
     /// <param name="confirmations">
     /// Сколько раз повторить последний размер после стабилизации. На Windows ConPTY
     /// может потерять resize вблизи старта клиента, поэтому там нужен один повтор.
@@ -169,7 +175,9 @@ public sealed class ResizeDebouncer
     /// <summary>
     /// Отмечает размер как отправленный и возвращает его. Вызывается под замком.
     /// </summary>
-    /// <returns>null, если тот же размер уже отправлен и повторять его незачем.</returns>
+    /// <returns>
+    /// null, если тот же размер уже отправлен и повторять его незачем.
+    /// </returns>
     private (int Cols, int Rows)? Take((int Cols, int Rows) size, DateTimeOffset now)
     {
         // Повторная отправка того же размера ничего не меняет — пропускаем.

@@ -3,8 +3,12 @@ namespace AgentDeck.Layout;
 /// <summary>
 /// Прямоугольник конкретного тайла в проекции дерева.
 /// </summary>
-/// <param name="TileId">Идентификатор тайла.</param>
-/// <param name="Rect">Область тайла.</param>
+/// <param name="TileId">
+/// Идентификатор тайла.
+/// </param>
+/// <param name="Rect">
+/// Область тайла.
+/// </param>
 public readonly record struct TileRect(Guid TileId, RectD Rect);
 
 /// <summary>

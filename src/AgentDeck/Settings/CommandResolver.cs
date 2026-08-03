@@ -40,8 +40,12 @@ public sealed class CommandResolver
     /// <summary>
     /// Проверяет, что команду есть чем запускать.
     /// </summary>
-    /// <param name="command">Команда утилиты; пустая означает обычный shell.</param>
-    /// <param name="environment">Окружение будущего процесса — источник PATH.</param>
+    /// <param name="command">
+    /// Команда утилиты; пустая означает обычный shell.
+    /// </param>
+    /// <param name="environment">
+    /// Окружение будущего процесса — источник PATH.
+    /// </param>
     /// <param name="workingDirectory">
     /// Рабочая директория будущего процесса — относительно неё shell будет
     /// искать команды вида <c>./run.sh</c>.

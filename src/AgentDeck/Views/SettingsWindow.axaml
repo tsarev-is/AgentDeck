@@ -4,6 +4,7 @@
         x:Class="AgentDeck.Views.SettingsWindow"
         x:DataType="vm:SettingsViewModel"
         Title="Settings"
+        Icon="/Assets/icon.png"
         Width="560"
         MinHeight="260"
         MaxHeight="680"
