@@ -11,6 +11,7 @@ namespace AgentDeck.Terminal;
 public sealed class TerminalHost : IAsyncDisposable
 {
     private readonly TerminalControlModel _model;
+    private readonly InverseVideo _inverseVideo;
     private readonly OutputBuffer _output = new();
     private readonly Lock _gate = new();
 
@@ -42,6 +43,10 @@ public sealed class TerminalHost : IAsyncDisposable
             // иначе построчный вывод «лесенкой» уползает вправо.
             ConvertEol = true,
         });
+
+        // Правщик инверсии считает ушедшие вниз строки, поэтому создаётся вместе
+        // с моделью — до первой порции вывода.
+        _inverseVideo = new InverseVideo(_model);
 
         _model.UserInput += OnUserInput;
         _model.SizeChanged += OnSizeChanged;
@@ -308,6 +313,13 @@ public sealed class TerminalHost : IAsyncDisposable
         foreach (var chunk in batch)
         {
             _model.Feed(chunk, chunk.Length);
+        }
+
+        // Инверсия правится после разбора, поэтому экран, собранный внутри Feed,
+        // о ней ещё не знает — изменившимся ячейкам нужен второй проход.
+        if (_inverseVideo.Normalize())
+        {
+            _model.UpdateDisplay();
         }
 
         Interlocked.Increment(ref _changeCounter);

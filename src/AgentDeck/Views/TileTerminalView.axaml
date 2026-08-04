@@ -12,7 +12,7 @@
                               Margin="6,4"
                               FontFamily="avares://AgentDeck/Assets/Fonts#JetBrains Mono"
                               FontSize="12"
-                              CaretBrush="{StaticResource IndustryAccentText}"
+                              CaretBrush="{StaticResource IndustryTerminalCaret}"
                               SelectionBrush="{StaticResource IndustryTerminalSelection}"
                               RightClickAction="None">
 
