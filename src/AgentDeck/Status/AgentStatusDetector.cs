@@ -8,9 +8,6 @@ namespace AgentDeck.Status;
 /// <param name="Rows">
 /// Последние строки видимой области буфера.
 /// </param>
-/// <param name="ChangeCounter">
-/// Монотонный счётчик изменений буфера.
-/// </param>
 /// <param name="Exited">
 /// Процесс завершился.
 /// </param>
@@ -19,54 +16,56 @@ namespace AgentDeck.Status;
 /// </param>
 public readonly record struct StatusSnapshot(
     IReadOnlyList<string> Rows,
-    long ChangeCounter,
     bool Exited,
     int? ExitCode);
 
 /// <summary>
 /// Детектор статуса тайла — чистая функция снимка и времени.
-/// Слои по убыванию приоритета: код возврата, устоявшийся паттерн вывода,
-/// активность буфера.
+/// Слои по убыванию приоритета: код возврата, тип утилиты, маркеры на экране.
 /// </summary>
+/// <remarks>
+/// Занятость определяется только маркером, который агент печатает сам
+/// («esc to interrupt», «✻ Scurrying… (4s)»), а не активностью буфера: буфер
+/// меняется и от набора текста в поле ввода, и от перерисовки интерфейса, так
+/// что по нему «модель работает» от «пользователь печатает» не отличить.
+/// </remarks>
 public sealed class AgentStatusDetector
 {
     /// <summary>
-    /// Сколько паттерн должен стабильно присутствовать или отсутствовать,
-    /// прежде чем поменяет статус. Защита от ложных срабатываний на перерисовке.
+    /// Сколько сигнал должен стабильно держаться на экране, прежде чем поменяет
+    /// статус. Защита от ложных срабатываний на перерисовке.
     /// </summary>
     public static readonly TimeSpan DefaultPersistence = TimeSpan.FromMilliseconds(750);
-
-    /// <summary>
-    /// Сколько буфер должен простоять без изменений, чтобы считать, что агент ждёт ввода.
-    /// </summary>
-    public static readonly TimeSpan DefaultIdleAfter = TimeSpan.FromSeconds(2);
 
     private readonly AgentKind _kind;
     private readonly Func<DateTimeOffset> _clock;
     private readonly TimeSpan _persistence;
-    private readonly TimeSpan _idleAfter;
 
     private AgentSignal? _observedSignal;
     private DateTimeOffset _observedSince;
     private AgentSignal? _confirmedSignal;
-
-    private long _lastCounter;
-    private DateTimeOffset _lastChangeAt;
     private bool _started;
 
     /// <summary>
     /// Создаёт детектор для указанного CLI.
     /// </summary>
+    /// <param name="kind">
+    /// Тип запущенной утилиты — от него зависит набор паттернов.
+    /// </param>
+    /// <param name="clock">
+    /// Часы детектора; по умолчанию системные.
+    /// </param>
+    /// <param name="persistence">
+    /// Выдержка сигнала; по умолчанию <see cref="DefaultPersistence"/>.
+    /// </param>
     public AgentStatusDetector(
         AgentKind kind,
         Func<DateTimeOffset>? clock = null,
-        TimeSpan? persistence = null,
-        TimeSpan? idleAfter = null)
+        TimeSpan? persistence = null)
     {
         _kind = kind;
         _clock = clock ?? (() => DateTimeOffset.UtcNow);
         _persistence = persistence ?? DefaultPersistence;
-        _idleAfter = idleAfter ?? DefaultIdleAfter;
         Status = TileStatus.Running;
     }
 
@@ -85,8 +84,6 @@ public sealed class AgentStatusDetector
         if (!_started)
         {
             _started = true;
-            _lastCounter = snapshot.ChangeCounter;
-            _lastChangeAt = now;
             _observedSince = now;
         }
 
@@ -97,7 +94,26 @@ public sealed class AgentStatusDetector
             return Status;
         }
 
-        // Слой 2: паттерны вывода с debounce устойчивости.
+        // Слой 2: у обычного терминала состояний нет. Ни занятость, ни ожидание
+        // ввода в нём с экрана не читаются: shell ждёт ввода и когда молчит, и
+        // когда гоняет сборку с болтливым выводом. Такой тайл просто жив.
+        if (!AgentPatterns.HasSignals(_kind))
+        {
+            Status = TileStatus.Running;
+            return Status;
+        }
+
+        // Пустой экран — ещё не отсутствие маркера. Первый опрос приходит
+        // раньше, чем CLI успевает нарисовать хоть что-то, и приняв эту пустоту
+        // за отработанный запрос, тайл объявил бы «ход за пользователем» прямо
+        // на запуске: сплошной акцент в рамке и точке. Пока рисовать нечего,
+        // статус остаётся прежним.
+        if (snapshot.Rows.Count == 0)
+        {
+            return Status;
+        }
+
+        // Слой 3: маркеры на экране с выдержкой устойчивости.
         var signal = AgentPatterns.Match(_kind, snapshot.Rows);
 
         if (signal != _observedSignal)
@@ -105,26 +121,23 @@ public sealed class AgentStatusDetector
             _observedSignal = signal;
             _observedSince = now;
         }
-        else if (now - _observedSince >= _persistence)
+
+        // Маркер занятости агент печатает сам, спутать его не с чем — занятость
+        // подтверждается сразу, иначе короткий запрос успел бы отработать, ни
+        // разу не моргнув лампочкой. Уход сигнала, наоборот, требует выдержки:
+        // перерисовка экрана роняет строку с маркером на отдельный кадр.
+        if (signal is AgentSignal.Busy || now - _observedSince >= _persistence)
         {
             _confirmedSignal = signal;
-        }
-
-        // Слой 3: активность буфера.
-        if (snapshot.ChangeCounter != _lastCounter)
-        {
-            _lastCounter = snapshot.ChangeCounter;
-            _lastChangeAt = now;
         }
 
         Status = _confirmedSignal switch
         {
             AgentSignal.Permission => TileStatus.AwaitingPermission,
+            AgentSignal.Busy => TileStatus.Working,
 
-            // Маркер занятости удерживает Running даже при замершем буфере.
-            AgentSignal.Busy => TileStatus.Running,
-
-            _ => now - _lastChangeAt >= _idleAfter ? TileStatus.AwaitingInput : TileStatus.Running,
+            // Маркера работы на экране нет — запрос отработан, ход за пользователем.
+            _ => TileStatus.AwaitingInput,
         };
 
         return Status;

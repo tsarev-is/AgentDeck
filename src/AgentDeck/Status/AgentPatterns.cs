@@ -74,7 +74,7 @@ public static partial class AgentPatterns
         Compile(@"to interrupt", RegexOptions.IgnoreCase),
     ];
 
-    // ── cursor-agent (проверено на 2026.07.08) ──
+    // ── cursor-agent (проверено на 2026.07.23) ──
 
     private static readonly Regex[] CursorAgentPermission =
     [
@@ -86,6 +86,16 @@ public static partial class AgentPatterns
 
     private static readonly Regex[] CursorAgentBusy =
     [
+        // Строка состояния 2026.07.23: спиннер из брайля и «Working». Само слово
+        // без спиннера не берём — оно встречается и в тексте ответа.
+        Compile(@"[⠀-⣿]\s*Working\b"),
+
+        // Подсказка прерывания: на спокойном экране её нет, там только
+        // «→ Add a follow-up».
+        Compile(@"ctrl\+c to stop", RegexOptions.IgnoreCase),
+
+        // Формулировка прежних версий — пусть остаётся, ложных срабатываний она
+        // не даёт, а вернуть её обратно в CLI вправе.
         Compile(@"to interrupt", RegexOptions.IgnoreCase),
     ];
 
@@ -129,6 +139,13 @@ public static partial class AgentPatterns
         AgentKind.OpenCode => OpenCodeBusy,
         _ => None,
     };
+
+    /// <summary>
+    /// У типа есть паттерны состояния — по экрану видно, занят он или ждёт ввода.
+    /// Тип без паттернов (обычный shell, незнакомая утилита) состояний не
+    /// различает: о таком тайле известно только то, что процесс в нём жив.
+    /// </summary>
+    public static bool HasSignals(AgentKind kind) => Permission(kind).Count > 0 || Busy(kind).Count > 0;
 
     /// <summary>
     /// Ищет сигнал в строках буфера. Подтверждение приоритетнее занятости:

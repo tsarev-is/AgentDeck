@@ -289,6 +289,67 @@ public class DeckViewModelTests
     }
 
     /// <summary>
+    /// Лампочку в заголовке разметка собирает из признаков статуса, поэтому на
+    /// каждый статус поднят ровно один признак: два разом дали бы точке два
+    /// стиля, и «горит» смешалось бы с «мигает».
+    /// </summary>
+    [Test]
+    public void Status_RaisesExactlyOneFlag()
+    {
+        var tile = new TileViewModel(Guid.NewGuid(), "/tmp");
+
+        var flags = new Dictionary<AgentDeck.Status.TileStatus, Func<bool>>
+        {
+            [AgentDeck.Status.TileStatus.Placeholder] = () => tile.IsPlaceholder,
+            [AgentDeck.Status.TileStatus.Running] = () => tile.IsRunning,
+            [AgentDeck.Status.TileStatus.Working] = () => tile.IsWorking,
+            [AgentDeck.Status.TileStatus.AwaitingInput] = () => tile.IsAwaitingInput,
+            [AgentDeck.Status.TileStatus.AwaitingPermission] = () => tile.IsAwaitingPermission,
+            [AgentDeck.Status.TileStatus.Finished] = () => tile.IsFinished,
+            [AgentDeck.Status.TileStatus.Crashed] = () => tile.IsCrashed,
+        };
+
+        foreach (var status in Enum.GetValues<AgentDeck.Status.TileStatus>())
+        {
+            tile.Status = status;
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(flags[status](), Is.True, $"признак статуса {status} должен быть поднят");
+                Assert.That(flags.Count(flag => flag.Value()), Is.EqualTo(1), $"у статуса {status} признак один");
+            });
+        }
+    }
+
+    /// <summary>
+    /// Смена статуса рассылает уведомления по всем признакам: классы точки
+    /// статуса привязаны именно к ним, и без уведомления лампочка застыла бы на
+    /// прежнем виде.
+    /// </summary>
+    [Test]
+    public void Status_Change_NotifiesEveryFlag()
+    {
+        var tile = new TileViewModel(Guid.NewGuid(), "/tmp");
+        var notified = new List<string?>();
+        tile.PropertyChanged += (_, e) => notified.Add(e.PropertyName);
+
+        tile.Status = AgentDeck.Status.TileStatus.Working;
+
+        Assert.That(
+            notified,
+            Is.SupersetOf(new[]
+            {
+                nameof(TileViewModel.IsPlaceholder),
+                nameof(TileViewModel.IsRunning),
+                nameof(TileViewModel.IsWorking),
+                nameof(TileViewModel.IsAwaitingInput),
+                nameof(TileViewModel.IsAwaitingPermission),
+                nameof(TileViewModel.IsFinished),
+                nameof(TileViewModel.IsCrashed),
+            }));
+    }
+
+    /// <summary>
     /// Штатный выход из агента закрывает тайл: мёртвый терминал не принимает
     /// ввод и в раскладке остаётся зависшим прямоугольником.
     /// </summary>

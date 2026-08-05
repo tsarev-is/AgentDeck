@@ -6,8 +6,8 @@ namespace AgentDeck.Tests.Status;
 
 /// <summary>
 /// Паттерны статусов на реальных фрагментах вывода CLI-агентов.
-/// Фрагменты сняты с установленных версий: Claude Code 2.1.220,
-/// Codex CLI 0.146.0, cursor-agent 2026.07.08.
+/// Фрагменты сняты с установленных версий: Claude Code 2.1.222,
+/// Codex CLI 0.146.0, cursor-agent 2026.07.23.
 /// </summary>
 [TestFixture]
 public class AgentPatternsTests
@@ -155,6 +155,22 @@ public class AgentPatternsTests
     }
 
     /// <summary>
+    /// Спокойный экран Codex сигналов не даёт — иначе лампочка мигала бы всегда.
+    /// </summary>
+    [Test]
+    public void Codex_IdlePrompt_HasNoSignal()
+    {
+        string[] rows =
+        [
+            "› Explain this codebase",
+            "",
+            "  gpt-5.6-sol medium · /home/user/dev/api",
+        ];
+
+        Assert.That(AgentPatterns.Match(AgentKind.Codex, rows), Is.Null);
+    }
+
+    /// <summary>
     /// Запросы cursor-agent распознаются.
     /// </summary>
     [TestCase("Run this command?")]
@@ -166,6 +182,53 @@ public class AgentPatternsTests
     public void CursorAgent_Prompts_ArePermission(string line)
     {
         Assert.That(AgentPatterns.Match(AgentKind.CursorAgent, [line]), Is.EqualTo(AgentSignal.Permission));
+    }
+
+    /// <summary>
+    /// Индикатор работы cursor-agent распознаётся как занятость: спиннер из
+    /// брайля со словом «Working» и подсказка прерывания под полем ввода.
+    /// </summary>
+    [Test]
+    public void CursorAgent_Working_IsBusy()
+    {
+        string[] rows =
+        [
+            "  ⠰⠳ Working",
+            "  → Add a follow-up                                            ctrl+c to stop",
+            "  Cursor Grok 4.5 High Fast",
+        ];
+
+        Assert.That(AgentPatterns.Match(AgentKind.CursorAgent, rows), Is.EqualTo(AgentSignal.Busy));
+    }
+
+    /// <summary>
+    /// Каждый из двух маркеров cursor-agent работает сам по себе: строка
+    /// состояния и подсказка прерывания живут в разных частях экрана и в узкий
+    /// тайл могут попасть по одной.
+    /// </summary>
+    [TestCase("  ⠞ Working")]
+    [TestCase("  ⣀⣀ Working on it")]
+    [TestCase("  → Add a follow-up                ctrl+c to stop")]
+    public void CursorAgent_BusyMarkers_AreRecognizedApart(string line)
+    {
+        Assert.That(AgentPatterns.Match(AgentKind.CursorAgent, [line]), Is.EqualTo(AgentSignal.Busy));
+    }
+
+    /// <summary>
+    /// Спокойный экран cursor-agent сигналов не даёт: подсказки прерывания на нём
+    /// нет, а слово «Working» без спиннера — просто текст.
+    /// </summary>
+    [Test]
+    public void CursorAgent_IdlePrompt_HasNoSignal()
+    {
+        string[] rows =
+        [
+            "  I am working on the parser now.",
+            "  → Add a follow-up",
+            "  Cursor Grok 4.5 High Fast · 5.4%",
+        ];
+
+        Assert.That(AgentPatterns.Match(AgentKind.CursorAgent, rows), Is.Null);
     }
 
     /// <summary>
@@ -192,7 +255,7 @@ public class AgentPatternsTests
     }
 
     /// <summary>
-    /// У «script» паттернов нет: статус определяется кодом возврата и активностью.
+    /// У «script» паттернов нет: статус определяется только кодом возврата.
     /// </summary>
     [TestCase("Do you want to proceed?")]
     [TestCase("Allow Codex to run `ls`")]
@@ -206,6 +269,20 @@ public class AgentPatternsTests
             Assert.That(AgentPatterns.Permission(AgentKind.Script), Is.Empty);
             Assert.That(AgentPatterns.Busy(AgentKind.Script), Is.Empty);
         });
+    }
+
+    /// <summary>
+    /// Наличие паттернов отделяет агента от обычного терминала: у агента статус
+    /// читается с экрана, у терминала — нет, и его тайл просто жив.
+    /// </summary>
+    [TestCase(AgentKind.Claude, true)]
+    [TestCase(AgentKind.Codex, true)]
+    [TestCase(AgentKind.OpenCode, true)]
+    [TestCase(AgentKind.CursorAgent, true)]
+    [TestCase(AgentKind.Script, false)]
+    public void HasSignals_SeparatesAgentsFromTerminal(AgentKind kind, bool expected)
+    {
+        Assert.That(AgentPatterns.HasSignals(kind), Is.EqualTo(expected));
     }
 
     /// <summary>

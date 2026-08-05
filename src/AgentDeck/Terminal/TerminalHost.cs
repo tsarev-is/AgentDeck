@@ -1,17 +1,19 @@
 using Avalonia.Threading;
 using SvcSystems.UI.Terminal;
+using XTerm.Input;
 
 namespace AgentDeck.Terminal;
 
 /// <summary>
 /// Клей между PTY-процессом и экранной моделью терминала: вывод PTY уходит в
 /// VT-парсер, пользовательский ввод и изменения размера — обратно в PTY.
-/// Даёт снимок буфера и счётчик изменений для детектора статусов.
+/// Даёт снимок буфера для детектора статусов.
 /// </summary>
 public sealed class TerminalHost : IAsyncDisposable
 {
     private readonly TerminalControlModel _model;
     private readonly InverseVideo _inverseVideo;
+    private readonly MarginScrollback _marginScrollback;
     private readonly OutputBuffer _output = new();
     private readonly Lock _gate = new();
 
@@ -20,9 +22,9 @@ public sealed class TerminalHost : IAsyncDisposable
     private readonly CancellationTokenSource _lifetime = new();
 
     private PtySession? _session;
+    private MouseTrackingMode _suspendedMouseTracking;
     private bool _disposed;
     private int _exitRaised;
-    private long _changeCounter;
     private int _cols = 80;
     private int _rows = 24;
 
@@ -47,6 +49,10 @@ public sealed class TerminalHost : IAsyncDisposable
         // Правщик инверсии считает ушедшие вниз строки, поэтому создаётся вместе
         // с моделью — до первой порции вывода.
         _inverseVideo = new InverseVideo(_model);
+
+        // Разбор прокрутки следит за потоком целиком: пропущенное начало
+        // оставило бы его с чужими границами региона.
+        _marginScrollback = new MarginScrollback(_model);
 
         _model.UserInput += OnUserInput;
         _model.SizeChanged += OnSizeChanged;
@@ -85,11 +91,6 @@ public sealed class TerminalHost : IAsyncDisposable
     public int? ExitCode => _session?.ExitCode;
 
     /// <summary>
-    /// Монотонный счётчик изменений буфера: рост означает активность процесса.
-    /// </summary>
-    public long ChangeCounter => Interlocked.Read(ref _changeCounter);
-
-    /// <summary>
     /// В буфере есть выделенный мышью текст.
     /// </summary>
     public bool HasSelection => _model.HasSelection;
@@ -100,15 +101,123 @@ public sealed class TerminalHost : IAsyncDisposable
     public string SelectedText => _model.SelectedText;
 
     /// <summary>
-    /// Процесс сам следит за мышью (полноэкранные TUI вроде htop и vim): клики
-    /// принадлежат ему, а не терминалу.
-    /// </summary>
-    public bool IsMouseReporting => _model.IsMouseModeActive;
-
-    /// <summary>
     /// Процесс включил bracketed paste (DECSET 2004) и ждёт вставку в обёртке.
     /// </summary>
     private bool IsBracketedPaste => _model.Terminal?.Engine?.BracketedPasteMode == true;
+
+    /// <summary>
+    /// Режим отслеживания мыши, включённый процессом; <c>None</c> — мышь
+    /// принадлежит терминалу.
+    /// </summary>
+    private MouseTrackingMode MouseTracking
+        => _model.Terminal?.Engine?.MouseTrackingMode ?? MouseTrackingMode.None;
+
+    /// <summary>
+    /// Процесс рисует на альтернативном экране — своей прокрутки у тайла нет.
+    /// </summary>
+    private bool IsAlternateScreen => _model.Terminal?.IsAlternateBufferActive == true;
+
+    /// <summary>
+    /// Прокручивает полноэкранное приложение колесом мыши, переводя поворот в
+    /// нажатия стрелок.
+    /// </summary>
+    /// <param name="delta">
+    /// Вертикальная составляющая поворота колеса.
+    /// </param>
+    /// <returns>
+    /// false, если поворот принадлежит не нам: прокрутку ведёт либо сам
+    /// терминал, либо процесс, который следит за мышью.
+    /// </returns>
+    /// <remarks>
+    /// Подробности перевода — в <see cref="AlternateScroll"/>.
+    /// </remarks>
+    public bool ScrollAlternateScreen(double delta)
+    {
+        if (!IsAlternateScreen || MouseTracking is not MouseTrackingMode.None)
+        {
+            return false;
+        }
+
+        var keys = AlternateScroll.Keys(delta, _rows, _model.Terminal?.Engine?.ApplicationCursorKeys == true);
+
+        if (keys.Length == 0)
+        {
+            return false;
+        }
+
+        _model.Send(keys);
+        return true;
+    }
+
+    /// <summary>
+    /// Выключает отслеживание мыши на время выделения текста. Полноэкранные TUI
+    /// (claude держит DECSET 1003 постоянно) забирают себе все нажатия, и
+    /// терминалу нечего выделять: контрол отдаёт нажатие процессу и выделение не
+    /// начинается, а нарисованное самим агентом выделение в буфер обмена не
+    /// положить. Режим гасится в самом VT-парсере, процессу об этом не
+    /// сообщается — он остаётся при своём мнении, а его собственный DECSET
+    /// вернёт всё обратно и без нас.
+    /// </summary>
+    /// <returns>
+    /// false, если гасить нечего: мышь и так принадлежит терминалу.
+    /// </returns>
+    public bool SuspendMouseTracking()
+    {
+        if (_suspendedMouseTracking is not MouseTrackingMode.None)
+        {
+            return true;
+        }
+
+        var mode = MouseTracking;
+
+        if (mode is MouseTrackingMode.None)
+        {
+            return false;
+        }
+
+        _suspendedMouseTracking = mode;
+        _model.Feed($"\u001b[?{(int)mode}l");
+        return true;
+    }
+
+    /// <summary>
+    /// Возвращает процессу отслеживание мыши после выделения. Если за время
+    /// жеста процесс переставил режим сам, своё старое значение не навязываем:
+    /// оно отправляло бы ему события мыши, которых он больше не ждёт.
+    /// </summary>
+    public void ResumeMouseTracking()
+    {
+        var mode = _suspendedMouseTracking;
+        _suspendedMouseTracking = MouseTrackingMode.None;
+
+        if (mode is MouseTrackingMode.None || MouseTracking is not MouseTrackingMode.None)
+        {
+            return;
+        }
+
+        _model.Feed($"\u001b[?{(int)mode}h");
+    }
+
+    /// <summary>
+    /// Возвращает мышь терминалу перед запуском процесса в этом тайле.
+    /// </summary>
+    /// <remarks>
+    /// Режим мыши предыдущего процесса новому не принадлежит: он его не просил,
+    /// а получал бы в ввод и поворот колеса, и каждое движение мыши. Сам движок
+    /// при сбросе этот режим оставляет себе, поэтому гасим его в потоке — так же,
+    /// как на время выделения.
+    /// </remarks>
+    private void ReleaseMouseTracking()
+    {
+        _suspendedMouseTracking = MouseTrackingMode.None;
+
+        var mode = MouseTracking;
+
+        if (mode is not MouseTrackingMode.None)
+        {
+            _model.Feed($"\u001b[?{(int)mode}l");
+        }
+    }
 
     /// <summary>
     /// Запускает процесс по профилю. Повторный запуск сначала гасит предыдущий.
@@ -119,6 +228,8 @@ public sealed class TerminalHost : IAsyncDisposable
 
         Profile = profile;
         Interlocked.Exchange(ref _exitRaised, 0);
+
+        ReleaseMouseTracking();
 
         if (await SpawnAsync(profile, cancellationToken).ConfigureAwait(false) is not { } session)
         {
@@ -184,21 +295,49 @@ public sealed class TerminalHost : IAsyncDisposable
     }
 
     /// <summary>
-    /// Возвращает последние строки видимой области буфера — вход детектора статусов.
+    /// Возвращает последние заполненные строки живого экрана — вход детектора
+    /// статусов.
     /// </summary>
+    /// <remarks>
+    /// Строки берутся от начала активного экрана, а не от видимой области:
+    /// пользователь может уйти в прокрутку, а процесс всё равно пишет вниз
+    /// буфера. Иначе состояние читалось бы по чужому месту истории — старое
+    /// «esc to interrupt», попавшее в вид, держало бы лампочку мигающей, пока
+    /// тайл прокручен.
+    /// Хвостовые пустые строки отбрасываются: codex и прочие встроенные в поток
+    /// CLI рисуют интерфейс сразу под своим выводом, а не по низу экрана, и в
+    /// свежем тайле их строка состояния («Working (0s • esc to interrupt)»)
+    /// оказывается в верхней трети. Окно, отсчитанное от низа экрана, видело бы
+    /// в таком тайле одну пустоту, и статус агента остался бы неразобранным.
+    /// </remarks>
     public IReadOnlyList<string> SnapshotLastRows(int count)
     {
-        if (count <= 0)
+        if (count <= 0 || _model.Terminal is not { } terminal)
         {
             return [];
         }
 
         try
         {
-            var lines = _model.Terminal?.Engine?.GetVisibleLines() ?? [];
-            return lines.Length <= count ? lines : lines[^count..];
+            var buffer = terminal.Buffer;
+            var rows = Math.Min(terminal.Rows, buffer.Lines.Length - buffer.YBase);
+            var lines = new List<string>(Math.Max(rows, 0));
+
+            for (var row = 0; row < rows; row++)
+            {
+                lines.Add(buffer.GetLine(buffer.YBase + row) is { } line
+                    ? line.TranslateToString(true, 0, line.Length)
+                    : string.Empty);
+            }
+
+            while (lines.Count > 0 && string.IsNullOrWhiteSpace(lines[^1]))
+            {
+                lines.RemoveAt(lines.Count - 1);
+            }
+
+            return lines.Count > count ? lines[^count..] : lines;
         }
-        catch (Exception exception) when (exception is InvalidOperationException or NullReferenceException)
+        catch (Exception exception) when (exception is InvalidOperationException or NullReferenceException or ArgumentOutOfRangeException)
         {
             // Буфер перестраивается параллельно с ресайзом — снимок пропускаем.
             return [];
@@ -255,9 +394,36 @@ public sealed class TerminalHost : IAsyncDisposable
     public void Reset()
     {
         _output.Clear();
+        _marginScrollback.Reset();
+        _model.ClearSelection();
+        ReleaseMouseTracking();
         _model.Terminal?.Engine?.Reset();
+        DropScrollback();
         _model.FullBufferUpdate();
-        Interlocked.Exchange(ref _changeCounter, 0);
+    }
+
+    /// <summary>
+    /// Выбрасывает прокрутку прошлого процесса.
+    /// </summary>
+    /// <remarks>
+    /// Сброс движка затирает текст строк, но их число и начало экрана оставляет
+    /// как было: перезапущенный тайл показывал бы живую полосу прокрутки, а за
+    /// ней — пустоту во всю прошлую историю. Отдельного способа обрезать
+    /// прокрутку у буфера нет, зато пересчёт по прежним размерам сам добирает
+    /// строки до экрана и прижимает и начало экрана, и вид к нулю.
+    /// </remarks>
+    private void DropScrollback()
+    {
+        if (_model.Terminal is not { } terminal)
+        {
+            return;
+        }
+
+        var buffer = terminal.Buffer;
+
+        buffer.Lines.Clear();
+        buffer.Resize(terminal.Cols, terminal.Rows);
+        buffer.SetCursor(0, 0);
     }
 
     /// <summary>
@@ -312,7 +478,7 @@ public sealed class TerminalHost : IAsyncDisposable
 
         foreach (var chunk in batch)
         {
-            _model.Feed(chunk, chunk.Length);
+            _marginScrollback.Feed(chunk, chunk.Length);
         }
 
         // Инверсия правится после разбора, поэтому экран, собранный внутри Feed,
@@ -321,8 +487,6 @@ public sealed class TerminalHost : IAsyncDisposable
         {
             _model.UpdateDisplay();
         }
-
-        Interlocked.Increment(ref _changeCounter);
     }
 
     private void OnUserInput(object? sender, TerminalUserInputEventArgs e) => _session?.Write(e.Data.Span);

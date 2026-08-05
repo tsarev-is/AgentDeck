@@ -97,7 +97,6 @@ public sealed class StatusPoller : IDisposable
 
             tile.Status = entry.Detector.Update(new StatusSnapshot(
                 host.SnapshotLastRows(SnapshotRows),
-                host.ChangeCounter,
                 !host.IsRunning && host.ExitCode is not null,
                 host.ExitCode));
         }

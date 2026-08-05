@@ -255,6 +255,7 @@ public sealed class TileViewModel : ViewModelBase, IAsyncDisposable
 
             OnPropertyChanged(nameof(IsPlaceholder));
             OnPropertyChanged(nameof(IsRunning));
+            OnPropertyChanged(nameof(IsWorking));
             OnPropertyChanged(nameof(IsAwaitingInput));
             OnPropertyChanged(nameof(IsAwaitingPermission));
             OnPropertyChanged(nameof(IsFinished));
@@ -277,12 +278,17 @@ public sealed class TileViewModel : ViewModelBase, IAsyncDisposable
     }
 
     /// <summary>
-    /// Процесс работает и выдаёт вывод.
+    /// Процесс запущен и жив — так живёт обычный терминал.
     /// </summary>
     public bool IsRunning => Status == TileStatus.Running;
 
     /// <summary>
-    /// Агент притих и ждёт ввода.
+    /// Агент занят: модель обрабатывает запрос.
+    /// </summary>
+    public bool IsWorking => Status == TileStatus.Working;
+
+    /// <summary>
+    /// Агент отработал запрос и ждёт ввода.
     /// </summary>
     public bool IsAwaitingInput => Status == TileStatus.AwaitingInput;
 

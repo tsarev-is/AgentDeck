@@ -5,8 +5,8 @@
              x:Class="AgentDeck.Views.TileTerminalView"
              x:DataType="vm:TileViewModel">
 
-    <!-- RightClickAction=None: собственное действие контрола по правой кнопке
-         гасило бы событие, из которого Avalonia открывает меню ниже. -->
+    <!-- RightClickAction=None: правую кнопку целиком ведёт представление —
+         до контрола она не доходит, меню ниже открывается вручную. -->
 
     <terminal:TerminalControl x:Name="Terminal"
                               Margin="6,4"
@@ -17,7 +17,7 @@
                               RightClickAction="None">
 
         <terminal:TerminalControl.ContextMenu>
-            <ContextMenu Opening="OnMenuOpening">
+            <ContextMenu>
                 <MenuItem Header="Copy"
                           InputGesture="Ctrl+Shift+C"
                           IsEnabled="{Binding #Terminal.HasSelection}"

@@ -9,34 +9,57 @@ namespace AgentDeck.Settings;
 /// </summary>
 public static class AgentKindProfile
 {
-    private static readonly IReadOnlyList<AgentKind> Known =
+    /// <summary>
+    /// Формы, под которыми известный CLI попадает в настройки: собственное имя
+    /// команды и то, как его зовут на практике. cursor-agent ставит рядом с собой
+    /// симлинк «agent», а кнопку с ним обычно называют «cursor»; без этих форм
+    /// тайл считается обычным терминалом и работу модели не показывает.
+    /// </summary>
+    private static readonly (AgentKind Kind, string[] Names)[] Known =
     [
-        AgentKind.Claude,
-        AgentKind.Codex,
-        AgentKind.OpenCode,
-        AgentKind.CursorAgent,
+        (AgentKind.Claude, ["claude"]),
+        (AgentKind.Codex, ["codex"]),
+        (AgentKind.OpenCode, ["opencode"]),
+        (AgentKind.CursorAgent, ["cursor-agent", "cursoragent", "cursor", "agent"]),
     ];
 
     /// <summary>
-    /// Определяет профиль паттернов: сначала по имени утилиты, затем по имени
-    /// исполняемого файла в команде. Незнакомая утилита получает
-    /// <see cref="AgentKind.Script"/> — пустой набор паттернов, статус тогда
-    /// определяется только по активности буфера и коду возврата.
+    /// Определяет профиль паттернов: сначала по имени утилиты, затем по командам,
+    /// которые она запускает. Незнакомая утилита получает
+    /// <see cref="AgentKind.Script"/> — пустой набор паттернов, и статус тайла
+    /// сводится к «процесс жив» и коду возврата.
     /// </summary>
     public static AgentKind Resolve(string? name, string? command)
-        => Match(name) ?? Match(ExecutableStem(command)) ?? AgentKind.Script;
+        => Match(name) ?? MatchCommand(command) ?? AgentKind.Script;
 
     /// <summary>
-    /// Возвращает имя исполняемого файла из команды без пути и расширения:
-    /// «~/.local/bin/codex --full-auto» → «codex». Ведущие присваивания
-    /// окружения пропускаются, иначе «FOO=bar claude» осталось бы без своих
-    /// паттернов статуса.
+    /// Ищет знакомый CLI среди команд, которые запускает строка.
     /// </summary>
-    internal static string? ExecutableStem(string? command)
+    /// <param name="command">
+    /// Команда утилиты как её ввёл пользователь.
+    /// </param>
+    /// <returns>
+    /// null, если знакомого CLI в команде нет.
+    /// </returns>
+    /// <remarks>
+    /// Смотреть на все слова команды нельзя: <c>ssh agent</c> запускает ssh, а
+    /// <c>tail -f agentd.log</c> — tail, и приняв их за cursor-agent, тайл
+    /// получил бы чужие паттерны — а вместе с ними и состояния, которых у
+    /// терминала нет: вместо «процесс жив» лампочка объявляла бы «ход за
+    /// пользователем». Поэтому кандидаты берутся только с позиций команд —
+    /// подробности в <see cref="ShellCommand.ExecutableTokens"/>.
+    /// </remarks>
+    internal static AgentKind? MatchCommand(string? command)
     {
-        return ShellCommand.ExecutableToken(command) is { } token
-            ? Path.GetFileNameWithoutExtension(token)
-            : null;
+        foreach (var token in ShellCommand.ExecutableTokens(command))
+        {
+            if (Match(ShellCommand.Stem(token)) is { } kind)
+            {
+                return kind;
+            }
+        }
+
+        return null;
     }
 
     private static AgentKind? Match(string? candidate)
@@ -48,14 +71,37 @@ public static class AgentKindProfile
             return null;
         }
 
-        foreach (var kind in Known)
+        foreach (var (kind, names) in Known)
         {
-            if (trimmed.StartsWith(kind.CommandName(), StringComparison.OrdinalIgnoreCase))
+            foreach (var name in names)
             {
-                return kind;
+                if (IsNamed(trimmed, name))
+                {
+                    return kind;
+                }
             }
         }
 
         return null;
     }
+
+    /// <summary>
+    /// Кандидат назван именем известного CLI — сам по себе или с продолжением
+    /// через разделитель.
+    /// </summary>
+    /// <param name="candidate">
+    /// Имя утилиты или имя её исполняемого файла.
+    /// </param>
+    /// <param name="name">
+    /// Одна из форм известного CLI.
+    /// </param>
+    /// <remarks>
+    /// Продолжение бывает и у имени кнопки («claude sonnet»), и у файла
+    /// («claude-code» из npm-пакета), поэтому одного равенства мало. Но
+    /// продолжение через букву или цифру — это уже другое слово: «agentdeck» и
+    /// «cursorless» к cursor-agent отношения не имеют.
+    /// </remarks>
+    private static bool IsNamed(string candidate, string name)
+        => candidate.StartsWith(name, StringComparison.OrdinalIgnoreCase)
+            && (candidate.Length == name.Length || !char.IsLetterOrDigit(candidate[name.Length]));
 }
