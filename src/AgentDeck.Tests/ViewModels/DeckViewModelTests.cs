@@ -247,16 +247,17 @@ public class DeckViewModelTests
         var tile = new TileViewModel(Guid.NewGuid(), "/tmp");
         tile.SetLaunchOptions(AppSettings.CreateDefault().EnabledUtilities());
 
-        tile.SuggestAgent("codex");
+        tile.SuggestAgent(nameof(AgentKind.Codex), "codex");
 
         Assert.Multiple(() =>
         {
+            Assert.That(tile.UtilityId, Is.EqualTo(nameof(AgentKind.Codex)));
             Assert.That(tile.UtilityName, Is.EqualTo("codex"));
             Assert.That(tile.LaunchOptions.Count(o => o.IsSuggested), Is.EqualTo(1));
             Assert.That(tile.LaunchOptions.Single(o => o.IsSuggested).Kind, Is.EqualTo(AgentKind.Codex));
         });
 
-        tile.SuggestAgent(null);
+        tile.SuggestAgent(null, null);
         Assert.That(tile.LaunchOptions.Any(o => o.IsSuggested), Is.False);
     }
 
@@ -449,7 +450,7 @@ public class DeckViewModelTests
     {
         var deck = new DeckViewModel();
         var existing = deck.AddTile()!;
-        existing.SuggestAgent("codex");
+        existing.SuggestAgent(null, "codex");
 
         // Путь внутри домашней папки: тайл обязан взять его в короткой форме.
         var configured = Path.Combine(

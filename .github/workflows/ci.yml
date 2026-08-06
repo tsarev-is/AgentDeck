@@ -50,12 +50,20 @@ jobs:
           tar -czf AgentDeck-${VERSION}-linux-x64.tar.gz -C publish/linux-x64 .
           (cd publish/win-x64 && zip -qr "${GITHUB_WORKSPACE}/AgentDeck-${VERSION}-win-x64.zip" .)
 
-      - name: Create GitHub Release
+      - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: >
-          gh release create "v${VERSION}"
-          "AgentDeck-${VERSION}-linux-x64.tar.gz"
-          "AgentDeck-${VERSION}-win-x64.zip"
-          --title "AgentDeck v${VERSION}"
-          --generate-notes
+        run: |
+          # Версия живёт в VersionPrefix и держится, пока её не поднимут руками, а
+          # workflow идёт на каждый push в main: `gh release create` со второго
+          # push падал бы с «release already exists». Релиз этой версии обновляем
+          # на месте, а новый — создаём.
+          ASSETS=("AgentDeck-${VERSION}-linux-x64.tar.gz" "AgentDeck-${VERSION}-win-x64.zip")
+
+          if gh release view "v${VERSION}" >/dev/null 2>&1; then
+            gh release upload "v${VERSION}" "${ASSETS[@]}" --clobber
+          else
+            gh release create "v${VERSION}" "${ASSETS[@]}" \
+              --title "AgentDeck v${VERSION}" \
+              --generate-notes
+          fi

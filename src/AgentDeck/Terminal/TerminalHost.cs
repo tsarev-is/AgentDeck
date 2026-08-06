@@ -22,6 +22,11 @@ public sealed class TerminalHost : IAsyncDisposable
     // момент гашения, а dispose источника обрушил бы его ObjectDisposedException.
     private readonly CancellationTokenSource _lifetime = new();
 
+    // Очередь на запуск и гашение. Тоже не освобождается: в очереди может стоять
+    // вызов, которому dispose семафора вернул бы ObjectDisposedException вместо
+    // хода.
+    private readonly SemaphoreSlim _startGate = new(1, 1);
+
     private PtySession? _session;
     private MouseTrackingMode _suspendedMouseTracking;
     private bool _disposed;
@@ -224,9 +229,35 @@ public sealed class TerminalHost : IAsyncDisposable
     /// <summary>
     /// Запускает процесс по профилю. Повторный запуск сначала гасит предыдущий.
     /// </summary>
+    /// <remarks>
+    /// Запуски одного хоста идут строго по очереди. Двойное нажатие запуска или
+    /// перезапуска приходит двумя вызовами сразу, и без очереди оба гасили бы одну
+    /// и ту же (ещё пустую) сессию, поднимали каждый свой PTY и по очереди писали
+    /// себя в <c>_session</c>. Проигравший процесс оставался бы жив без владельца:
+    /// освободить его больше нечем, вывод он пишет в общий терминал, а его
+    /// <c>Exited</c> закрывает тайл процесса-победителя.
+    /// </remarks>
     public async Task StartAsync(AgentLaunchProfile profile, CancellationToken cancellationToken = default)
     {
-        await StopAsync().ConfigureAwait(false);
+        await _startGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+
+        try
+        {
+            await StartCoreAsync(profile, cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            _startGate.Release();
+        }
+    }
+
+    /// <summary>
+    /// Гасит предыдущий процесс и поднимает новый. Вызывается под очередью
+    /// запуска — только она делает пару «погасить, поднять» неделимой.
+    /// </summary>
+    private async Task StartCoreAsync(AgentLaunchProfile profile, CancellationToken cancellationToken)
+    {
+        await StopCoreAsync().ConfigureAwait(false);
 
         Profile = profile;
         Interlocked.Exchange(ref _exitRaised, 0);
@@ -431,7 +462,29 @@ public sealed class TerminalHost : IAsyncDisposable
     /// <summary>
     /// Гасит процесс и освобождает PTY.
     /// </summary>
+    /// <remarks>
+    /// Гашение встаёт в ту же очередь, что и запуск: иначе оно прошло бы по
+    /// сессии, которую параллельный запуск в этот момент только собирается
+    /// записать, — и та осталась бы жить уже после гашения.
+    /// </remarks>
     public async Task StopAsync()
+    {
+        await _startGate.WaitAsync().ConfigureAwait(false);
+
+        try
+        {
+            await StopCoreAsync().ConfigureAwait(false);
+        }
+        finally
+        {
+            _startGate.Release();
+        }
+    }
+
+    /// <summary>
+    /// Гасит процесс. Вызывается под очередью запуска.
+    /// </summary>
+    private async Task StopCoreAsync()
     {
         if (_session is not { } session)
         {

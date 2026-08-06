@@ -23,11 +23,6 @@ public sealed class UtilityRowViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// Пользователь нажал ✕ на строке.
-    /// </summary>
-    public event EventHandler? RemoveRequested;
-
-    /// <summary>
     /// Стабильный идентификатор утилиты.
     /// </summary>
     public string Id { get; }
@@ -69,11 +64,6 @@ public sealed class UtilityRowViewModel : ViewModelBase
     /// Выключенная строка гасится — как в макете.
     /// </summary>
     public double RowOpacity => _isEnabled ? 1.0 : 0.45;
-
-    /// <summary>
-    /// Поднимает запрос на удаление строки.
-    /// </summary>
-    public void RequestRemove() => RemoveRequested?.Invoke(this, EventArgs.Empty);
 
     /// <summary>
     /// Сворачивает строку обратно в настройку утилиты.

@@ -49,6 +49,12 @@ public class SessionStoreTests
             Assert.That(loaded.Tiles, Has.Count.EqualTo(state.Tiles.Count));
             Assert.That(loaded.Tiles[0].Id, Is.EqualTo(state.Tiles[0].Id));
             Assert.That(loaded.Tiles[0].Directory, Is.EqualTo(state.Tiles[0].Directory));
+
+            // Идентификатор утилиты обязан дожить до файла и обратно: именно по
+            // нему кнопка находится снова, а имя рядом с ним — лишь для сессий,
+            // записанных до его появления.
+            Assert.That(loaded.Tiles[0].UtilityId, Is.EqualTo(state.Tiles[0].UtilityId));
+            Assert.That(loaded.Tiles[0].Utility, Is.EqualTo(state.Tiles[0].Utility));
             Assert.That(loaded.Tiles[0].AgentKind, Is.EqualTo(state.Tiles[0].AgentKind));
             Assert.That(loaded.Window!.Width, Is.EqualTo(state.Window!.Width));
             Assert.That(loaded.Window.X, Is.EqualTo(state.Window.X));
@@ -220,7 +226,14 @@ public class SessionStoreTests
             Layout = LayoutSerializer.ToDto(tree).Root,
             Tiles =
             [
-                new TileState { Id = first.ToString(), Directory = "/home/user/dev/api", AgentKind = "Claude" },
+                new TileState
+                {
+                    Id = first.ToString(),
+                    Directory = "/home/user/dev/api",
+                    UtilityId = "u-1",
+                    Utility = "claude",
+                    AgentKind = "Claude",
+                },
                 new TileState { Id = second.ToString(), Directory = "/home/user/dev/web", AgentKind = null },
             ],
             Window = new AgentDeck.Session.WindowState { X = 120, Y = 80, Width = 1400, Height = 900, Maximized = false },

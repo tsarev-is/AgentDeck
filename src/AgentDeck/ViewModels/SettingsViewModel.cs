@@ -30,7 +30,7 @@ public sealed class SettingsViewModel : ViewModelBase
 
         foreach (var utility in source.Utilities)
         {
-            Add(new UtilityRowViewModel(utility));
+            _utilities.Add(new UtilityRowViewModel(utility));
         }
     }
 
@@ -61,18 +61,14 @@ public sealed class SettingsViewModel : ViewModelBase
             Enabled = true,
         });
 
-        Add(row);
+        _utilities.Add(row);
         return row;
     }
 
     /// <summary>
     /// Удаляет строку из таблицы.
     /// </summary>
-    public void RemoveUtility(UtilityRowViewModel row)
-    {
-        row.RemoveRequested -= OnRemoveRequested;
-        _utilities.Remove(row);
-    }
+    public void RemoveUtility(UtilityRowViewModel row) => _utilities.Remove(row);
 
     /// <summary>
     /// Собирает настройки для сохранения: пустые строки отбрасываются,
@@ -84,18 +80,4 @@ public sealed class SettingsViewModel : ViewModelBase
         DefaultDirectory = DefaultDirectory.Trim(),
         Utilities = [.. _utilities.Where(row => !row.IsBlank).Select(row => row.ToState())],
     };
-
-    private void Add(UtilityRowViewModel row)
-    {
-        row.RemoveRequested += OnRemoveRequested;
-        _utilities.Add(row);
-    }
-
-    private void OnRemoveRequested(object? sender, EventArgs e)
-    {
-        if (sender is UtilityRowViewModel row)
-        {
-            RemoveUtility(row);
-        }
-    }
 }

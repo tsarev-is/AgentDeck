@@ -1,6 +1,7 @@
 using AgentDeck.Layout;
 using AgentDeck.Models;
 using AgentDeck.Session;
+using AgentDeck.Settings;
 using AgentDeck.ViewModels;
 using NUnit.Framework;
 
@@ -232,6 +233,59 @@ public class SessionRestoreTests
             Assert.That(restored.Layout.Validate(), Is.True);
             Assert.That(restored.Layout.LeafCount, Is.EqualTo(restored.Tiles.Count));
         });
+    }
+
+    /// <summary>
+    /// Переименованная в настройках утилита остаётся собой: восстановленный тайл
+    /// находит её кнопку по идентификатору, а не по подписи. По имени подсказка
+    /// после переименования не находила бы уже ничего.
+    /// </summary>
+    [Test]
+    public void Restore_AfterUtilityRenamed_HighlightsSameUtility()
+    {
+        var settings = new AppSettings
+        {
+            Utilities = [new UtilityState { Id = "u-1", Name = "codex", Command = "codex", Enabled = true }],
+        };
+
+        var source = new DeckViewModel(settings);
+        var tile = source.AddTile("/tmp", null)!;
+        tile.SuggestAgent("u-1", "codex");
+
+        var renamed = new AppSettings
+        {
+            Utilities = [new UtilityState { Id = "u-1", Name = "codex-preview", Command = "codex", Enabled = true }],
+        };
+
+        var restored = new DeckViewModel(renamed);
+        Assert.That(restored.RestoreSession(source.CaptureSession()), Is.True);
+
+        var suggested = restored.FindTile(tile.Id)!.LaunchOptions.Single(o => o.IsSuggested);
+        Assert.That(suggested.Name, Is.EqualTo("codex-preview"), "акцент уехал вместе с переименованной утилитой");
+    }
+
+    /// <summary>
+    /// Удалённую утилиту не подменяет её тёзка: сохранён был идентификатор, и
+    /// новая утилита с тем же именем — другая утилита.
+    /// </summary>
+    [Test]
+    public void Restore_AfterUtilityRemoved_HighlightsNothing()
+    {
+        var source = new DeckViewModel(new AppSettings
+        {
+            Utilities = [new UtilityState { Id = "u-1", Name = "codex", Command = "codex", Enabled = true }],
+        });
+
+        var tile = source.AddTile("/tmp", null)!;
+        tile.SuggestAgent("u-1", "codex");
+
+        var restored = new DeckViewModel(new AppSettings
+        {
+            Utilities = [new UtilityState { Id = "u-2", Name = "codex", Command = "codex", Enabled = true }],
+        });
+
+        Assert.That(restored.RestoreSession(source.CaptureSession()), Is.True);
+        Assert.That(restored.FindTile(tile.Id)!.LaunchOptions.Any(o => o.IsSuggested), Is.False);
     }
 
     /// <summary>

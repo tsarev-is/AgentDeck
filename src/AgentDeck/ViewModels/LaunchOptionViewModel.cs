@@ -14,19 +14,27 @@ public sealed class LaunchOptionViewModel : ViewModelBase
     /// Создаёт вариант запуска по настройке утилиты.
     /// </summary>
     public LaunchOptionViewModel(UtilityState utility)
-        : this(utility.Name, utility.Command)
+        : this(utility.Id, utility.Name, utility.Command)
     {
     }
 
     /// <summary>
-    /// Создаёт вариант запуска с явными именем и командой.
+    /// Создаёт вариант запуска с явными идентификатором, именем и командой.
     /// </summary>
-    public LaunchOptionViewModel(string? name, string? command)
+    public LaunchOptionViewModel(string? id, string? name, string? command)
     {
+        Id = (id ?? string.Empty).Trim();
         Name = (name ?? string.Empty).Trim();
         Command = (command ?? string.Empty).Trim();
         Kind = AgentKindProfile.Resolve(Name, Command);
     }
+
+    /// <summary>
+    /// Идентификатор утилиты из настроек — её личность, переживающая
+    /// переименование. Пустая строка, если утилита пришла из настроек, записанных
+    /// до появления идентификаторов.
+    /// </summary>
+    public string Id { get; }
 
     /// <summary>
     /// Имя утилиты — подпись кнопки.

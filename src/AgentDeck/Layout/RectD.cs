@@ -38,10 +38,4 @@ public readonly record struct RectD(double X, double Y, double W, double H)
            && other.X < Right - epsilon
            && Y < other.Bottom - epsilon
            && other.Y < Bottom - epsilon;
-
-    /// <summary>
-    /// Переводит прямоугольник из нормированных координат в координаты указанной области.
-    /// </summary>
-    public RectD Scale(RectD bounds)
-        => new(bounds.X + X * bounds.W, bounds.Y + Y * bounds.H, W * bounds.W, H * bounds.H);
 }

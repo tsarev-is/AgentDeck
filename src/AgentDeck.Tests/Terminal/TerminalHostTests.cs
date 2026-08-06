@@ -45,6 +45,54 @@ public class TerminalHostTests
     }
 
     /// <summary>
+    /// Два запуска сразу (двойное нажатие кнопки запуска или перезапуска)
+    /// оставляют один процесс. Без очереди оба прошли бы гашение по пустой сессии
+    /// и подняли по своему PTY: проигравший остался бы жив без владельца — писать
+    /// в общий терминал и закрыть тайл победителя своим Exited.
+    /// </summary>
+    [Test]
+    public async Task ConcurrentStarts_LeaveSingleProcess()
+    {
+        var marker = $"agentdeck-race-{Guid.NewGuid():N}";
+        var host = new TerminalHost();
+
+        // Две команды вместо одной: простую команду shell исполняет через exec,
+        // теряя вместе со своей строкой запуска и маркер, по которому мы считаем
+        // процессы.
+        var profile = AgentLaunchProfile.Create(
+            AgentKind.Script,
+            $": {marker}; sleep 300",
+            Path.GetTempPath());
+
+        // Запуски разводятся по потокам и выравниваются барьером. Простого
+        // Task.WhenAll мало: подъём PTY проходит синхронно, и первый вызов
+        // успевает закончиться раньше, чем начнётся второй, — состязания не
+        // случилось бы вовсе.
+        using var ready = new Barrier(2);
+
+        try
+        {
+            await Task.WhenAll(Enumerable.Range(0, 2).Select(_ => Task.Run(async () =>
+            {
+                ready.SignalAndWait();
+                await host.StartAsync(profile);
+            })));
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(host.IsRunning, Is.True, "победивший запуск оставляет живой процесс");
+                Assert.That(CountProcesses(marker), Is.EqualTo(1), "второй запуск обязан погасить первый");
+            });
+        }
+        finally
+        {
+            await host.DisposeAsync();
+        }
+
+        Assert.That(CountProcesses(marker), Is.Zero, "гашение хоста не оставляет процессов");
+    }
+
+    /// <summary>
     /// Живой хост отдаёт pid своего процесса — по нему тайл спрашивает рабочую
     /// директорию. Погашенный не отдаёт ничего: номер мёртвого процесса система
     /// вправе выдать кому угодно, и опрос ушёл бы к чужой директории.

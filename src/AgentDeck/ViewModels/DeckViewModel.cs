@@ -123,8 +123,14 @@ public sealed class DeckViewModel : ViewModelBase
     public TileViewModel? AddTile() => AddTile(DefaultDirectory, null);
 
     /// <summary>
-    /// Добавляет тайл с указанной директорией и подсказкой сохранённой утилиты.
+    /// Добавляет тайл с указанной директорией и подсказкой утилиты по имени.
     /// </summary>
+    /// <param name="directory">
+    /// Стартовая рабочая директория тайла.
+    /// </param>
+    /// <param name="suggestedUtility">
+    /// Имя утилиты, кнопку которой нужно акцентировать; null — без подсказки.
+    /// </param>
     public TileViewModel? AddTile(string directory, string? suggestedUtility)
     {
         if (!CanAddTile)
@@ -139,7 +145,7 @@ public sealed class DeckViewModel : ViewModelBase
         }
 
         var tile = Attach(CreateTile(id, directory));
-        tile.SuggestAgent(suggestedUtility);
+        tile.SuggestAgent(null, suggestedUtility);
         _tiles.Add(tile);
 
         NotifyDeckChanged();
@@ -199,6 +205,7 @@ public sealed class DeckViewModel : ViewModelBase
             {
                 Id = tile.Id.ToString(),
                 Directory = tile.Directory,
+                UtilityId = tile.UtilityId,
                 Utility = tile.UtilityName,
             }),
         ],
@@ -253,7 +260,7 @@ public sealed class DeckViewModel : ViewModelBase
         {
             var saved = described[id];
             var tile = CreateTile(id, saved.Directory ?? DefaultDirectory);
-            tile.SuggestAgent(saved.Utility ?? LegacyUtilityName(saved.AgentKind));
+            tile.SuggestAgent(saved.UtilityId, saved.Utility ?? LegacyUtilityName(saved.AgentKind));
             restored.Add(tile);
         }
 

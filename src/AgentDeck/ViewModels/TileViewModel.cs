@@ -42,6 +42,7 @@ public sealed class TileViewModel : ViewModelBase, IAsyncDisposable
 
     private string _directory;
     private AgentKind? _agentKind;
+    private string? _utilityId;
     private string? _utilityName;
     private LaunchOptionViewModel? _launched;
     private TileStatus _status = TileStatus.Placeholder;
@@ -232,7 +233,19 @@ public sealed class TileViewModel : ViewModelBase, IAsyncDisposable
     }
 
     /// <summary>
-    /// Имя запущенной (или сохранённой с прошлой сессии) утилиты.
+    /// Идентификатор запущенной (или сохранённой с прошлой сессии) утилиты —
+    /// ключ, по которому её кнопка находится снова.
+    /// </summary>
+    public string? UtilityId
+    {
+        get => _utilityId;
+        set => SetField(ref _utilityId, value);
+    }
+
+    /// <summary>
+    /// Имя запущенной (или сохранённой с прошлой сессии) утилиты. Показывается в
+    /// сообщениях и остаётся запасным ключом для сессий, записанных до появления
+    /// <see cref="UtilityId"/>.
     /// </summary>
     public string? UtilityName
     {
@@ -372,22 +385,45 @@ public sealed class TileViewModel : ViewModelBase, IAsyncDisposable
             _launchOptions.Add(new LaunchOptionViewModel(utility));
         }
 
-        SuggestAgent(UtilityName);
+        SuggestAgent(UtilityId, UtilityName);
     }
 
     /// <summary>
     /// Помечает кнопку утилиты, сохранённой с прошлой сессии.
     /// </summary>
-    public void SuggestAgent(string? utilityName)
+    /// <param name="utilityId">
+    /// Идентификатор сохранённой утилиты; null — сессия старого формата, где
+    /// сохранялось только имя.
+    /// </param>
+    /// <param name="utilityName">
+    /// Имя сохранённой утилиты.
+    /// </param>
+    public void SuggestAgent(string? utilityId, string? utilityName)
     {
+        UtilityId = utilityId;
         UtilityName = utilityName;
 
         foreach (var option in _launchOptions)
         {
-            option.IsSuggested = !string.IsNullOrEmpty(utilityName)
-                && string.Equals(option.Name, utilityName, StringComparison.OrdinalIgnoreCase);
+            option.IsSuggested = IsSuggestedBy(option, utilityId, utilityName);
         }
     }
+
+    /// <summary>
+    /// Узнаёт сохранённую утилиту в кнопке запуска.
+    /// </summary>
+    /// <remarks>
+    /// Опознание идёт по идентификатору: он и есть личность утилиты, и
+    /// переименованная в настройках утилита обязана остаться акцентированной.
+    /// Имя — запасной ключ для сессий, записанных до того, как идентификатор стал
+    /// сохраняться. Когда идентификатор известен, к имени уже не откатываемся:
+    /// удалённую утилиту не должен подменять её тёзка.
+    /// </remarks>
+    private static bool IsSuggestedBy(LaunchOptionViewModel option, string? utilityId, string? utilityName)
+        => !string.IsNullOrEmpty(utilityId) && option.Id.Length > 0
+            ? string.Equals(option.Id, utilityId, StringComparison.Ordinal)
+            : !string.IsNullOrEmpty(utilityName)
+              && string.Equals(option.Name, utilityName, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
     /// Начинает следить за вложенными папками текущей директории. Вызывается
@@ -570,6 +606,7 @@ public sealed class TileViewModel : ViewModelBase, IAsyncDisposable
         // ради того, что и так известно.
         Directory = PathUtilities.CollapseHome(directory);
         AgentKind = option.Kind;
+        UtilityId = option.Id;
         UtilityName = option.Name;
         _launched = option;
 

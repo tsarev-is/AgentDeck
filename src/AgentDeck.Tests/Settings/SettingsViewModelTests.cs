@@ -55,12 +55,12 @@ public class SettingsViewModelTests
     /// ✕ на строке убирает её из таблицы.
     /// </summary>
     [Test]
-    public void RequestRemove_DropsRow()
+    public void RemoveUtility_DropsRow()
     {
         var model = new SettingsViewModel(AppSettings.CreateDefault());
         var victim = model.Utilities.Single(row => row.Name == "opencode");
 
-        victim.RequestRemove();
+        model.RemoveUtility(victim);
 
         Assert.That(model.Utilities.Any(row => row.Name == "opencode"), Is.False);
     }
