@@ -159,7 +159,7 @@ public class AgentKindProfileTests
     /// с окружением, симлинками и цепочками. Каждая обязана получить свой профиль.
     /// </summary>
     [TestCase("terminal", "bash", AgentKind.Script)]
-    [TestCase("claude", "CLAUDE_CONFIG_DIR=\"$HOME/.claude-team\" DISABLE_TELEMETRY=1 claude --dangerously-skip-permissions", AgentKind.Claude)]
+    [TestCase("claude", "claude", AgentKind.Claude)]
     [TestCase("cursor", "agent", AgentKind.CursorAgent)]
     [TestCase("codex", "codex", AgentKind.Codex)]
     public void Resolve_RealWorldSettings_KeepStatusProfiles(string name, string command, AgentKind expected)

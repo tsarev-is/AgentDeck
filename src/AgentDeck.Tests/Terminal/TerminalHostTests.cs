@@ -482,10 +482,137 @@ public class TerminalHostTests
     }
 
     /// <summary>
+    /// Запрос позиции курсора (DSR 6) доходит до процесса ответом. Без ответа
+    /// процесс просто ждёт его в своём вводе: так замирала утилита «sa» на
+    /// первом же Backspace — .NET <c>Console.ReadLine</c> спрашивает позицию,
+    /// чтобы стереть символ через перенос строки, и до следующего нажатия дело
+    /// уже не доходило.
+    /// </summary>
+    [Test]
+    [Platform("Linux")]
+    public async Task DeviceStatusReport_AnswersProcessWithCursorPosition()
+    {
+        var directory = Directory.CreateTempSubdirectory("agentdeck-dsr-");
+        var received = Path.Combine(directory.FullName, "received");
+        var host = new TerminalHost();
+
+        try
+        {
+            await host.StartAsync(AgentLaunchProfile.Create(
+                AgentKind.Script,
+                $"cat > \"{received}\"",
+                directory.FullName));
+
+            host.Model.Feed("abc");
+            host.Model.Feed("\u001b[6n");
+
+            // Ввод процессу отдаёт драйвер PTY, и в каноническом режиме — целыми
+            // строками: без перевода строки ответ остался бы в его буфере.
+            host.Model.Send("\n");
+
+            Assert.That(
+                await ReadWhenWritten(received),
+                Is.EqualTo("\u001b[1;4R\n"),
+                "процесс должен получить строку и столбец курсора");
+        }
+        finally
+        {
+            await host.DisposeAsync();
+            directory.Delete(recursive: true);
+        }
+    }
+
+    /// <summary>
+    /// Ответ на запрос процесса не трогает вид: пользователь мог уйти в
+    /// прокрутку, а запросы приходят когда угодно — отправленный как ввод, ответ
+    /// возвращал бы его к низу буфера на каждом из них.
+    /// </summary>
+    [Test]
+    public async Task DeviceStatusReport_WhileScrolledBack_KeepsViewport()
+    {
+        var host = new TerminalHost();
+
+        try
+        {
+            for (var line = 0; line < 60; line++)
+            {
+                host.Model.Feed($"line {line}\r\n");
+            }
+
+            host.Model.ScrollLines(-40);
+
+            var buffer = host.Model.Terminal.Buffer;
+            var displayed = buffer.YDisp;
+
+            Assert.That(displayed, Is.LessThan(buffer.YBase), "тайл должен быть прокручен вверх");
+
+            host.Model.Feed("\u001b[6n");
+
+            Assert.That(buffer.YDisp, Is.EqualTo(displayed), "вид остался там, где его оставил пользователь");
+        }
+        finally
+        {
+            await host.DisposeAsync();
+        }
+    }
+
+    /// <summary>
+    /// Запрос в тайле без процесса отвечать некому: хост не должен падать,
+    /// отдавая ответ в несуществующую сессию.
+    /// </summary>
+    [Test]
+    public async Task DeviceStatusReport_WithoutProcess_DoesNothing()
+    {
+        var host = new TerminalHost();
+
+        try
+        {
+            Assert.DoesNotThrow(() => host.Model.Feed("\u001b[6n"));
+        }
+        finally
+        {
+            await host.DisposeAsync();
+        }
+    }
+
+    /// <summary>
     /// Режим отслеживания мыши, который видит VT-парсер хоста.
     /// </summary>
     private static MouseTrackingMode MouseTracking(TerminalHost host)
         => host.Model.Terminal?.Engine?.MouseTrackingMode ?? MouseTrackingMode.None;
+
+    /// <summary>
+    /// Ждёт, пока процесс запишет в файл хоть что-нибудь.
+    /// </summary>
+    /// <param name="path">
+    /// Файл, в который процесс тайла складывает свой ввод.
+    /// </param>
+    /// <returns>
+    /// Содержимое файла; пустая строка, если процесс так ничего и не написал.
+    /// </returns>
+    private static async Task<string> ReadWhenWritten(string path)
+    {
+        var deadline = DateTimeOffset.UtcNow + TimeSpan.FromSeconds(10);
+
+        while (DateTimeOffset.UtcNow < deadline)
+        {
+            try
+            {
+                if (File.Exists(path) && await File.ReadAllTextAsync(path) is { Length: > 0 } text)
+                {
+                    return text;
+                }
+            }
+            catch (IOException)
+            {
+                // Файл открыт процессом на запись — читаем на следующем круге.
+            }
+
+            await Task.Delay(50);
+        }
+
+        return string.Empty;
+    }
 
     /// <summary>
     /// Считает живые процессы, в командной строке которых есть маркер.

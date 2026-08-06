@@ -1,5 +1,6 @@
 using Avalonia.Threading;
 using SvcSystems.UI.Terminal;
+using XTerm.Events;
 using XTerm.Input;
 
 namespace AgentDeck.Terminal;
@@ -56,6 +57,7 @@ public sealed class TerminalHost : IAsyncDisposable
 
         _model.UserInput += OnUserInput;
         _model.SizeChanged += OnSizeChanged;
+        _model.Terminal.Engine.DataReceived += OnTerminalReply;
     }
 
     /// <summary>
@@ -453,6 +455,7 @@ public sealed class TerminalHost : IAsyncDisposable
 
         _model.UserInput -= OnUserInput;
         _model.SizeChanged -= OnSizeChanged;
+        _model.Terminal.Engine.DataReceived -= OnTerminalReply;
         await StopAsync().ConfigureAwait(false);
     }
 
@@ -490,6 +493,23 @@ public sealed class TerminalHost : IAsyncDisposable
     }
 
     private void OnUserInput(object? sender, TerminalUserInputEventArgs e) => _session?.Write(e.Data.Span);
+
+    /// <summary>
+    /// Отдаёт процессу ответ терминала на его запрос: позицию курсора (DSR 6),
+    /// набор возможностей (DA), цвета, размеры окна.
+    /// </summary>
+    /// <remarks>
+    /// Запрос — половина диалога, и без второй половины процесс просто ждёт: он
+    /// написал <c>ESC[6n</c> и читает свой ввод, пока не получит ответ. Так
+    /// зависает всё, что строит ввод на .NET <c>Console.ReadLine</c> (утилита
+    /// «sa»): первый же Backspace спрашивает позицию курсора, чтобы стереть
+    /// символ через перенос строки, и тайл замирает — символ не стирается, а
+    /// набранное дальше не показывается, потому что процесс до него не дошёл.
+    /// Ответ идёт прямо в PTY, а не через <c>Model.Send</c>: это не ввод
+    /// пользователя, и прижимать за него вид к низу буфера — значит выбрасывать
+    /// пользователя из прокрутки на каждый запрос процесса.
+    /// </remarks>
+    private void OnTerminalReply(object? sender, TerminalEvents.DataEventArgs e) => _session?.Write(e.Data);
 
     private void OnSizeChanged(object? sender, TerminalSizeChangedEventArgs e)
     {
