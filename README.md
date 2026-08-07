@@ -34,7 +34,7 @@ Install the [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0), th
 dotnet build src/AgentDeck.sln -c Release
 ```
 
-To create a self-contained build, use `dotnet publish` with `linux-x64` or `win-x64`:
+To create a self-contained build, use `dotnet publish` with `linux-x64`, `win-x64` or `osx-arm64` (`osx-x64` on Intel Macs):
 
 ```bash
 dotnet publish src/AgentDeck/AgentDeck.csproj -c Release -r linux-x64 --self-contained true
